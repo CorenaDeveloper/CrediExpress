@@ -1,0 +1,114 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+#alertContainer {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    width: 40%; /* Puedes ajustar este valor */
+    max-width: 90%;
+    pointer-events: none; /* No bloquea el clic fuera */
+}
+
+    #alertContainer .alert {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        word-wrap: break-word;
+        word-break: break-word;
+        pointer-events: auto; /* Reactiva los botones */
+    }
+
+    /* Ícono de la alerta */
+    #alertContainer .icon-item {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+    }
+
+    #alertContainer .alert p {
+        margin: 0;
+        padding: 0 10px;
+        flex: 1;
+        overflow-wrap: break-word;
+        color: #333;
+    }
+
+    /* Botón de cerrar */
+    #alertContainer .btn-close {
+        flex-shrink: 0;
+    }
+
+
+/* Estilos adicionales para el modal de solicitud de crédito */
+
+.modal-xl-custom {
+    max-width: 95vw;
+}
+
+.section-divider {
+    height: 1px;
+    background: #dee2e6;
+    margin: 1rem 0;
+}
+
+.highlight-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #0d6efd;
+}
+
+.amount-text {
+    color: #198754;
+    font-weight: 600;
+}
+
+.percentage-text {
+    color: #fd7e14;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .modal-xl-custom {
+        margin: 0.5rem;
+    }
+}
+

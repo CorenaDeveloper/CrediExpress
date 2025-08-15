@@ -1,0 +1,343 @@
+﻿@{
+    ViewData["Title"] = "Liquidación de Préstamos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/css/liquidacion.css" rel="stylesheet" />
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="fas fa-hand-holding-usd me-2 text-primary"></i>
+                        Liquidación de Préstamos
+                    </h2>
+                    <p class="text-muted mb-0">Liquidación total y anticipada de préstamos activos</p>
+                </div>
+                <div>
+                    <span class="badge bg-primary fs-6">
+                        <i class="fas fa-calendar me-1"></i>
+                        <span id="fechaActual"></span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Búsqueda de Préstamo -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card liquidacion-card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-search me-2"></i>
+                        Buscar Préstamo para Liquidar
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-end">
+                        <div class="col-md-6">
+                            <label for="numeroPrestamo" class="form-label fw-bold">
+                                <i class="fas fa-hashtag me-1"></i>
+                                Número de Préstamo
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="numeroPrestamo"
+                                   placeholder="Ej: 12345" maxlength="10" required>
+                            <div class="form-text">Ingrese el número del préstamo activo a liquidar</div>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-primary btn-lg w-100" id="btnBuscarPrestamo">
+                                <i class="fas fa-search me-2"></i>Buscar
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-secondary btn-lg w-100" id="btnLimpiar">
+                                <i class="fas fa-refresh me-2"></i>Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información del Préstamo -->
+    <div id="seccionResultado" style="display: none;">
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card liquidacion-card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-contract me-2"></i>
+                            Información del Préstamo
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-row">
+                                    <strong><i class="fas fa-hashtag me-2 text-primary"></i>Número:</strong>
+                                    <span id="prestamoId" class="fw-bold text-primary">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <strong><i class="fas fa-user me-2 text-info"></i>Cliente:</strong>
+                                    <span id="prestamoCliente">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <strong><i class="fas fa-dollar-sign me-2 text-success"></i>Monto Original:</strong>
+                                    <span id="prestamoMonto" class="text-success fw-bold">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <strong><i class="fas fa-calendar me-2 text-warning"></i>Fecha:</strong>
+                                    <span id="prestamoFecha">-</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-row">
+                                    <strong><i class="fas fa-clock me-2 text-secondary"></i>Tipo:</strong>
+                                    <span id="prestamoTipo">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <strong><i class="fas fa-list-ol me-2 text-dark"></i>Cuotas:</strong>
+                                    <span id="prestamoCuotas">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <strong><i class="fas fa-money-bill me-2 text-primary"></i>Cuota Mensual:</strong>
+                                    <span id="prestamoCuotaMensual" class="fw-bold">-</span>
+                                </div>
+                                <div class="info-row">
+                                    <strong><i class="fas fa-percentage me-2 text-danger"></i>Tasa:</strong>
+                                    <span id="prestamoTasa">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card liquidacion-card">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>Estado Actual
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6 mb-3">
+                                <div class="stat-card success">
+                                    <i class="fas fa-check fa-2x mb-2"></i>
+                                    <h4 id="estadoCuotasPagadas">0</h4>
+                                    <small>Pagadas</small>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="stat-card warning">
+                                    <i class="fas fa-clock fa-2x mb-2"></i>
+                                    <h4 id="estadoCuotasPendientes">0</h4>
+                                    <small>Pendientes</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="text-muted small">Progreso de Pagos</label>
+                            <div class="progress progress-custom">
+                                <div class="progress-bar bg-success" id="progressBar" style="width: 0%">0%</div>
+                            </div>
+                        </div>
+
+                        <div class="row text-center small">
+                            <div class="col-6">
+                                <strong>Pagado:</strong><br>
+                                <span id="estadoCapitalPagado" class="text-success">$0.00</span>
+                            </div>
+                            <div class="col-6">
+                                <strong>Pendiente:</strong><br>
+                                <span id="estadoSaldoPendiente" class="text-danger">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial de Pagos -->
+    <div id="seccionHistorial" style="display: none;">
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card liquidacion-card">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-history me-2"></i>
+                            Historial de Pagos
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover" id="tablaHistorial">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th class="text-center">Cuota #</th>
+                                        <th>Fecha Pago</th>
+                                        <th class="text-end">Monto Total</th>
+                                        <th class="text-end">Capital</th>
+                                        <th class="text-end">Interés</th>
+                                        <th class="text-end">Mora</th>
+                                        <th class="text-center">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Se llenará dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de Liquidación -->
+    <div id="seccionLiquidacion" style="display: none;">
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card liquidacion-card border-success">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-calculator me-2"></i>
+                            Cálculo de Liquidación
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Liquidación Total:</strong> Se calculará el saldo pendiente de capital más los intereses pendientes con descuento por liquidación anticipada.
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="border rounded p-3 mb-3">
+                                    <h6 class="text-primary"><i class="fas fa-coins me-2"></i>Capital Pendiente</h6>
+                                    <div class="h4 text-primary" id="liquidacionCapital">$0.00</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="border rounded p-3 mb-3">
+                                    <h6 class="text-warning"><i class="fas fa-percentage me-2"></i>Interés Original</h6>
+                                    <div class="h4 text-warning" id="liquidacionInteres">$0.00</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="border rounded p-3 mb-3 bg-light">
+                                    <h6 class="text-success">
+                                        <i class="fas fa-tag me-2"></i>Descuento (10%)
+                                        <span class="descuento-badge">DESCUENTO</span>
+                                    </h6>
+                                    <div class="h4 text-success" id="liquidacionDescuento">$0.00</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="border rounded p-3 mb-3">
+                                    <h6 class="text-info"><i class="fas fa-calculator me-2"></i>Interés con Descuento</h6>
+                                    <div class="h4 text-info" id="liquidacionInteresDescuento">$0.00</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="text-center p-4 bg-success text-white rounded-3">
+                            <h3 class="mb-2">
+                                <i class="fas fa-hand-holding-usd me-3"></i>
+                                TOTAL A LIQUIDAR
+                            </h3>
+                            <div class="liquidacion-total" id="liquidacionTotal">$0.00</div>
+                        </div>
+
+                        <div class="mt-4">
+                            <label for="observacionesLiquidacion" class="form-label fw-bold">
+                                <i class="fas fa-comment me-2"></i>Observaciones de la Liquidación
+                            </label>
+                            <textarea class="form-control form-control-lg" id="observacionesLiquidacion"
+                                      rows="3" placeholder="Motivo de la liquidación, método de pago, etc..."
+                                      required></textarea>
+                            <div class="form-text">Describa el motivo y detalles de la liquidación</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card liquidacion-card border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Información Importante
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <h6><i class="fas fa-info-circle me-2"></i>Liquidación Total</h6>
+                            <ul class="mb-0 small">
+                                <li>Se pagará todo el capital pendiente</li>
+                                <li>Se aplicará descuento del 10% en intereses</li>
+                                <li>El préstamo quedará completamente cancelado</li>
+                                <li>Esta acción no se puede deshacer</li>
+                            </ul>
+                        </div>
+
+                        <div class="mb-3">
+                            <h6 class="text-primary">
+                                <i class="fas fa-chart-line me-2"></i>Resumen Financiero
+                            </h6>
+                            <div class="small">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Capital Pendiente:</span>
+                                    <span id="estadoSaldoPendiente" class="fw-bold">$0.00</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Interés Pendiente:</span>
+                                    <span id="estadoInteresPendiente" class="fw-bold">$0.00</span>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <span class="fw-bold">Ahorro con descuento:</span>
+                                    <span class="text-success fw-bold" id="ahorroDescuento">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-liquidar" id="btnConfirmarLiquidacion" disabled>
+                                <i class="fas fa-check-circle me-2"></i>
+                                Confirmar Liquidación
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <h4>Procesando...</h4>
+        <p class="loading-message">Cargando información del préstamo...</p>
+    </div>
+</div>
+
+<!-- Campo oculto para el monto de liquidación -->
+<input type="hidden" id="montoLiquidacion" value="0">
+
+<!-- Scripts necesarios -->
+<script src="~/js/liquidacion.js"></script>

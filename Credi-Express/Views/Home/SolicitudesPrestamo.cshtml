@@ -1,0 +1,307 @@
+﻿@using Credi_Express.Services
+@{
+    ViewData["Title"] = "SolicitudesPrestamo";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <h4 class="card-title">Filtro</h4>
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="position:relative;">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <label for="estadoFiltro" class="form-label">Tipo Estado</label>
+                            <select id="estadoFiltro" class="form-select form-select-sm">
+                                <option value="2">Todos</option>
+                                <option value="1">Aprobadas</option>
+                                <option value="0">Sin Aprobar</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="txtFechaDesde" class="form-label">Inicio Busqueda</label>
+                            <input type="date" id="txtFechaDesde" class="form-control form-control-sm" placeholder="Fecha Desde" />
+                        </div>
+                        <div class="col-md-3">
+                            <label for="txtFechaDesde" class="form-label">Fin Busqueda</label>
+                            <input type="date" id="txtFechaHasta" class="form-control form-control-sm" placeholder="Fecha Hasta" />
+                        </div>
+                        <div class="col-md-2">
+                            <label for="selectExtra" class="form-label">Extra</label>
+                            <select id="selectExtra" class="form-select form-select-sm">
+                                <option value="1">Fecha Solicitud</option>
+                                <option value="2">Sin Aplicar Fecha</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <br />
+                            <button type="button" id="btnFiltrar" class="btn btn-primary">Filtrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row" id="contenedorTabla" style="display: none;">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <h4 class="card-title">Lista de Solicitudes</h4>
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="position:relative;">
+                    <div class="table-responsive">
+                        <table id="tblSolicitudes" class="display table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Detalle de Solicitud -->
+<div class="modal fade" id="modalDetalleSolicitud" tabindex="-1" aria-labelledby="modalDetalleSolicitudLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl-custom">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold" id="modalDetalleSolicitudLabel">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>
+                    Detalle de Solicitud de Crédito # <span id="modalNumSolicitud">SOL-2025-001234</span>
+                </h6>
+                <button type="button" class="btn-close text-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Información del Cliente y Préstamo -->
+                    <div class="col-md-4">
+                        <div class="card card-round">
+                            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                                <div class="card-head-row card-tools-still-right">
+                                    <div class="card-title">
+                                        <i class="fas fa-user me-2"></i>
+                                        <span id="modalEstado">En Revisión</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="card-list py-4">
+                                    <!-- Cliente -->
+                                    <div class="item-list">
+                                        <div class="info-user ms-3">
+                                            <div class="username"><span id="modalCliente">-</span></div>
+                                            <div class="status">Cliente</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Fecha -->
+                                    <div class="item-list">
+                                        <div class="info-user ms-3">
+                                            <div class="username"><span id="modalFecha">-</span></div>
+                                            <div class="status">Fecha Solicitud</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="section-divider"></div>
+                                    
+                                    <!-- Monto y Tasa -->
+                                    <div class="row">
+                                        <div class="col">
+                                            <div class="item-list">
+                                                <div class="info-user ms-3">
+                                                    <div class="username amount-text"><span id="txtTipoPrestamo">-</span></div>
+                                                    <div class="status">Forma de Pago</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="item-list">
+                                                <div class="info-user ms-3">
+                                                    <div class="username percentage-text"><span id="modalDetalleEstado">-</span></div>
+                                                    <div class="status">Estado de solicitud</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Cuotas y Valor Cuota -->
+                                    <div class="row">
+                                        <div class="col">
+                                            <div class="item-list">
+                                                <div class="info-user ms-3">
+                                                    <div class="status">Observación Rechazo</div>
+                                                    <div class="username"><span id="txtObservacionRechazo">-</span></div>
+                                                </div>
+                                            </div>
+                                        </div>                                        
+                                    </div>
+                                    
+                                    <!-- Interés y Tasa Domicilio -->
+                                    <div class="row">
+                                        <div class="col">
+                                            <div class="item-list">
+                                                <div class="info-user ms-3">
+                                                    <div class="status">Comentario</div>
+                                                    <div class="username"><span id="txtObservacion">-</span></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col">
+                                            <div class="item-list">
+                                                <div class="info-user ms-3">
+                                                    <div class="status">Solicitud creada por</div>
+                                                    <div class="username"><span id="txtNombreCreador">-</span></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                   
+
+                                    <div class="row">
+                                        <div class="col">
+                                            <div class="item-list">
+                                                <div class="info-user ms-3">
+                                                    <div class="status">Gestor de Cliente</div>
+                                                    <div class="username"><span id="txtNombreGestor">-</span></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                   
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Desglose Detallado -->
+                    <div class="col-md-8">
+                        <div class="card card-round">
+                            <div class="card-header">
+                                <div class="card-head-row card-tools-still-right">
+                                    <div class="card-title">
+                                        <i class="fas fa-calculator me-2"></i>
+                                        Desglose Financiero
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+                                    <table class="display table table-striped table-hover" id="tblDetalle">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 50%">Concepto</th>
+                                                <th style="width: 20%" class="text-center">Porcentaje</th>
+                                                <th style="width: 30%" class="text-end">Monto</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><strong>Monto Principal</strong></td>
+                                                <td class="text-center">-</td>
+                                                <td class="text-end"><strong id="modalMonto">-</strong></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Interés sobre capital</td>
+                                                <td class="text-center"><span id="modalTasa">0.00 %</span></td>
+                                                <td class="text-end"><span id="montoInteres">$0.00</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Tasa por domicilio</td>
+                                                <td class="text-center"><span id="modalTasaDomicilio">0.0%</span></td>
+                                                <td class="text-end"><span id="montoDomicilio">$0.00</span></td>
+                                            </tr>
+                                            <tr style="background-color: #f8f9fa;">
+                                                <td><strong>Total a Pagar</strong></td>
+                                                <td class="text-center"><strong>-</strong></td>
+                                                <td class="text-end"><span id="montoTotal">$ 0.00</span></td>
+                                            </tr>
+                                            <tr style="background-color: #e3f2fd;">
+                                                <td><strong>Cuota</strong></td>
+                                                <td class="text-center"><span id="modalNumCuotas">-</span></td>
+                                                <td class="text-end"><span id="modalValorCuota">-</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Información adicional -->
+                                <div class="p-3 border-top">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                <strong>Fecha primer pago:</strong> <span id="fechaPrimerPago">-</span>
+                                            </small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted">
+                                               @*  <i class="fas fa-calendar me-1"></i>
+                                                <strong>Fecha último pago:</strong> 15/05/2026 *@
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>
+                    Cerrar
+                </button>
+                @if (User.TienePermiso("Home/SolicitudesPrestamo", "Reenvio"))
+                {
+                    <button type="button" id="btnReenvio" class="btn btn-warning">
+                        <i class="fas fa-redo me-1"></i>
+                        Reenviar
+                    </button>
+                }
+
+                @if (User.TienePermiso("Home/SolicitudesPrestamo", "Update"))
+                {
+                    <button type="button" id="btnRechazar" class="btn btn-danger">
+                        <i class="fas fa-ban me-1"></i>
+                        Rechazar
+                    </button>
+                }
+                @if (User.TienePermiso("Home/SolicitudesPrestamo", "Update"))
+                {
+                    <button type="button" id="btnAprobar" class="btn btn-success">
+                        <i class="fas fa-check me-1"></i>
+                        Aprobar Solicitud
+                    </button>
+                }
+                <!-- NUEVO: Botón para imprimir pagaré (solo visible cuando está aprobado) -->
+                <button type="button" id="btnImprimirPagare" class="btn btn-primary" style="display: none;">
+                    <i class="fas fa-file-pdf me-1"></i>
+                    Imprimir Pagaré
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/solicitudesprestamo.js"></script>

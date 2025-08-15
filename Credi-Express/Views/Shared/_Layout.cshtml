@@ -1,0 +1,575 @@
+﻿@inject IHttpContextAccessor HttpContextAccessor
+@using Credi_Express.Services
+@{
+    var session = HttpContextAccessor.HttpContext?.Session;
+
+    var userId = session?.GetString("UsuarioId");
+    var userName = session?.GetString("NombreCompleto");
+    var user = session?.GetString("Usuario");
+}
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+@if (TempData["Mensaje"] != null)
+{
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            showAlert("@TempData["TipoMensaje"]", "@TempData["Mensaje"]");
+        });
+    </script>
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Interface Dispatchtrack</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <script type="importmap"></script>
+    <link rel="icon"
+          href="~/assets/img/kaiadmin/Logosinfondo.png"
+          type="image/x-icon" />
+
+    <!-- Fonts and icons -->
+    <script src="~/assets/js/plugin/webfont/webfont.min.js"></script>
+    <link href="~/css/loadings.css" rel="stylesheet" />
+
+    <script>
+        WebFont.load({
+          google: { families: ["Public Sans:300,400,500,600,700"] },
+          custom: {
+            families: [
+              "Font Awesome 5 Solid",
+              "Font Awesome 5 Regular",
+              "Font Awesome 5 Brands",
+              "simple-line-icons",
+            ],
+            urls: ["/assets/css/fonts.min.css"],
+          },
+          active: function () {
+            sessionStorage.fonts = true;
+          },
+        });
+    </script>
+    <style>
+        table {
+            border: 1px solid #aeb6bf;
+            border-collapse: separate;
+        }
+
+            table thead th {
+                background-color: #1a2035 !important;
+                color: white !important;
+                text-align: center !important;
+                vertical-align: middle !important;
+                position: relative;
+                padding-top: 12px;
+            }
+
+            /* Ajuste de posición de flechas de ordenamiento */
+            table.dataTable thead th.sorting:after,
+            table.dataTable thead th.sorting:before,
+            table.dataTable thead th.sorting_asc:after,
+            table.dataTable thead th.sorting_asc:before,
+            table.dataTable thead th.sorting_desc:after,
+            table.dataTable thead th.sorting_desc:before {
+                position: absolute !important;
+                top: 3px !important; /* Ajusta este valor según tu preferencia */
+            }
+
+
+            table td, table th {
+                border: none;
+            }
+
+        .modal-header {
+            background-color: #1a2035 !important;
+            color: white !important;
+        }
+
+        .modal-body {
+            background-color: #f8f9f9;
+        }
+
+       .tamano1 {
+        font-size: 11px !important;
+            }
+
+       .tamano2 {
+        font-size: 12px !important;
+            }
+
+        .modal-footer {
+            padding: 0.65rem 1rem !important; 
+        }
+
+        .btn-table {
+            background-color: #1a2035 !important;
+            color: white !important;
+        }
+
+
+    </style>
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="~/assets/css/bootstrap.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/assets/css/plugins.min.css" />
+    <link rel="stylesheet" href="~/assets/css/kaiadmin.min.css" />
+
+    <link href="~/css/site.css" rel="stylesheet" />
+    <link href="~/css/clientes.css" rel="stylesheet" />
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- GeoSearch -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-geosearch@3.1.0/dist/geosearch.css" />
+    <script src="https://unpkg.com/leaflet-geosearch@3.1.0/dist/bundle.min.js"></script>
+
+    <!-- FullCalendar v5 (funciona bien sin módulos ni bundlers) -->
+    <script src="~/assets/js/plugin/fullcalendar/fullcalendar.js"></script>
+    <script src="~/assets/js/plugin/fullcalendar/locales-all.js"></script>
+
+</head>
+<body>
+
+    <!--   Core JS Files   -->
+    <script src="~/assets/js/core/jquery-3.7.1.min.js" asp-append-version="true"></script>
+
+    <script src="~/assets/js/core/popper.min.js"></script>
+    <script src="~/assets/js/core/bootstrap.min.js"></script>
+    <!-- jQuery Scrollbar -->
+    <script src="~/assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js"></script>
+    <!-- Chart JS -->
+    <script src="~/assets/js/plugin/chart.js/chart.min.js"></script>
+    <!-- jQuery Sparkline -->
+    <script src="~/assets/js/plugin/jquery.sparkline/jquery.sparkline.min.js"></script>
+    <!-- Chart Circle -->
+    <script src="~/assets/js/plugin/chart-circle/circles.min.js"></script>
+    <!-- Datatables -->
+    <script src="~/assets/js/plugin/datatables/datatables.min.js"></script>
+    <!-- Bootstrap Notify -->
+    <script src="~/assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js"></script>
+    <!-- jQuery Vector Maps -->
+    <script src="~/assets/js/plugin/jsvectormap/jsvectormap.min.js"></script>
+    <script src="~/assets/js/plugin/jsvectormap/world.js"></script>
+    <!-- Sweet Alert -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Kaiadmin JS -->
+    <script src="~/assets/js/kaiadmin.min.js"></script>
+    <!-- Kaiadmin DEMO methods, don't include it in your project! -->
+    <script src="~/assets/js/setting-demo.js"></script>
+    <script src="~/js/alertas.js"></script>
+    <!-- Formato de campos JS -->
+    <script src="~/js/formatocampos.js"></script>
+    <script src="~/js/loadingspinner.js"></script>
+    <!-- GENERADOR DE PDF JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <script>
+        $("#lineChart").sparkline([102, 109, 120, 99, 110, 105, 115], {
+          type: "line",
+          height: "70",
+          width: "100%",
+          lineWidth: "2",
+          lineColor: "#177dff",
+          fillColor: "rgba(23, 125, 255, 0.14)",
+        });
+
+        $("#lineChart2").sparkline([99, 125, 122, 105, 110, 124, 115], {
+          type: "line",
+          height: "70",
+          width: "100%",
+          lineWidth: "2",
+          lineColor: "#f3545d",
+          fillColor: "rgba(243, 84, 93, .14)",
+        });
+
+        $("#lineChart3").sparkline([105, 103, 123, 100, 95, 105, 115], {
+          type: "line",
+          height: "70",
+          width: "100%",
+          lineWidth: "2",
+          lineColor: "#ffa534",
+          fillColor: "rgba(255, 165, 52, .14)",
+        });
+    </script>
+    <div id="alertContainer" class="alert-container"></div>
+    <div class="loadingspinner-overlay">
+        <div class="loadingspinner">
+            <div id="square1"></div>
+            <div id="square2"></div>
+            <div id="square3"></div>
+            <div id="square4"></div>
+            <div id="square5"></div>
+        </div>
+    </div>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <div class="sidebar" data-background-color="dark">
+            <div class="sidebar-logo">
+                <!-- Logo Header -->
+                <div class="logo-header" data-background-color="dark">
+                    <a href="index.html" class="logo">
+                        <!-- Usa esta línea si estás en Razor (.cshtml) -->
+                        <img src="@Url.Content("~/assets/img/logletrasblancas.png")"
+                             alt="navbar brand"
+                             class="navbar-brand"
+                             height="115" width="165" />
+                        <!-- Si estás en HTML puro, usa esta:
+                        <img src="assets/img/kaiadmin/logo_light.svg" ... />
+                        -->
+                    </a>
+                    <div class="nav-toggle">
+                        <button class="btn btn-toggle toggle-sidebar">
+                            <i class="gg-menu-right"></i>
+                        </button>
+                        <button class="btn btn-toggle sidenav-toggler">
+                            <i class="gg-menu-left"></i>
+                        </button>
+                    </div>
+                    <button class="topbar-toggler more">
+                        <i class="gg-more-vertical-alt"></i>
+                    </button>
+                </div>
+                <!-- End Logo Header -->
+            </div>
+
+            <div class="sidebar-wrapper scrollbar scrollbar-inner">
+                <div class="sidebar-content">
+                    <ul class="nav nav-secondary">
+                        <!-- INICIO -->
+                        @if (User.TienePermiso("Home/index", "Read"))
+                        {
+                            <li class="nav-item active">
+                                <a href="/index">
+                                    <i class="fas fa-home"></i>
+                                    <p>Inicio</p>
+                                </a>
+                            </li>
+                        }
+
+                        <!-- COMPONENTES -->
+                        <li class="nav-section">
+                            <span class="sidebar-mini-icon">
+                                <i class="fa fa-ellipsis-h"></i>
+                            </span>
+                            <h4 class="text-section">PRESTAMOS</h4>
+                        </li>
+
+                        <!-- PRESTAMOS -->
+                        @if (User.TienePermiso("Home/NuevoPrestamo", "Read"))
+                        {
+                            <li class="nav-item">
+                                <a href="/Home/NuevoPrestamo">
+                                    <i class="fas fa-file-import"></i>
+                                    <p>Nueva Solicitud</p>
+                                </a>
+                            </li>
+
+                        }
+                        <!-- Solicitudes -->
+                        @if (User.TienePermiso("Home/SolicitudesPrestamo", "Read"))
+                        {
+                            <li class="nav-item">
+                                <a href="/Home/SolicitudesPrestamo">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                    <p>Solicitudes</p>
+                                </a>
+                            </li>
+                        }
+
+                        <!-- Solicitudes -->
+                        @if (User.TienePermiso("Home/MiSolicitudes", "Read"))
+                        {
+                            <li class="nav-item">
+                                <a href="/Home/MiSolicitudes">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                    <p>Mis Solicitudes</p>
+                                </a>
+                            </li>
+                        }
+
+
+                        <!-- PRESTAMOS Y PAGOS -->
+                        @if (User.TienePermiso("Home/Movimientos", "Read"))
+                        {
+                            <li class="nav-item">
+                                <a href="/Home/Movimientos">
+                                    <i class="fas fa-sync-alt"></i>
+                                    <p>Movimientos</p>
+                                </a>
+                            </li>
+                        }
+
+                        <!-- LIQUIDACION DE PRESTAMO -->
+                        @if (User.TienePermiso("Home/Liquidacion", "Read"))
+                        {
+                            <li class="nav-item">
+                                <a href="/Home/Liquidacion">
+                                    <i class="fas fa-history"></i>
+                                    <p>Liquidacion</p>
+                                </a>
+                            </li>
+                        }
+
+                        <!-- CORTE DE RUTA-->
+                        <li class="nav-item">
+                            <a href="/Home/CorteRuta">
+                                <i class="fas fa-tasks"></i>
+                                <p>Corte de Ruta</p>
+                            </a>
+                        </li>
+
+
+                        <!-- PRESTAMOS HISTORIAL -->
+                        <li class="nav-item">
+                            <a href="/Home/Prestamos">
+                                <i class="fas fa-hand-holding-usd"></i>
+                                <p>Prestamos Historial</p>
+                            </a>
+                        </li>
+
+                        <!-- MATENIMIENTO -->
+                        <li class="nav-section">
+                            <span class="sidebar-mini-icon">
+                                <i class="fa fa-ellipsis-h"></i>
+                            </span>
+                            <h4 class="text-section">MATENIMIENTO</h4>
+                        </li>
+
+                        <!-- ✅ CLIENTES - Con permiso -->
+                        @if (User.TienePermiso("Home/Clientes", "Read"))
+                        {
+                            <li class="nav-item">
+                                <a href="/Home/Clientes">
+                                    <i class="fas fa-user"></i>
+                                    <p>Clientes</p>
+                                </a>
+                            </li>
+                        }
+
+                        <!-- ✅ COLABORADORES - Con permiso -->
+                        @if (User.TienePermiso("Home/Colaboradores", "Read"))
+                        {
+                            <li class="nav-item">
+                                <a href="/Home/Colaboradores">
+                                    <i class="fas fa-user-friends"></i>
+                                    <p>Colaboradores</p>
+                                </a>
+                            </li>
+                        }
+
+                        <!-- CALENDARIO FESTIVO -->
+                        @if (User.TienePermiso("Home/Calendario", "Read"))
+                        {
+                            <li class="nav-item">
+                                <a href="/Home/Calendario">
+                                    <i class="far fa-calendar-alt"></i>
+                                    <p>Calendario Festivo</p>
+                                </a>
+                            </li>
+                        }
+
+
+                        <!-- PERMISOS -->
+                        @if (User.TienePermiso("Home/Permisos", "Read"))
+                        {
+                            <li class="nav-item">
+                                <a href="/Home/Permisos">
+                                    <i class="fas fa-project-diagram"></i>
+                                    <p>Permisos</p>
+                                </a>
+                            </li>
+                        }
+
+
+                      @*   <!-- REPORTES -->
+                        <li class="nav-section">
+                            <span class="sidebar-mini-icon">
+                                <i class="fa fa-ellipsis-h"></i>
+                            </span>
+                            <h4 class="text-section">REPORTES</h4>
+                        </li>
+
+                        <!-- DESEMBOLSO -->
+                        <li class="nav-item">
+                            <a href="/Facturas/Lista">
+                                <i class="fas fa-file-invoice"></i>
+                                <p>Desembolsos</p>
+                            </a>
+                        </li>
+
+                        <!-- RECUPERACION -->
+                        <li class="nav-item">
+                            <a href="/Facturas/Lista">
+                                <i class="fas fa-file-invoice"></i>
+                                <p>Recuperación</p>
+                            </a>
+                        </li>
+
+                        <!-- CARTERA -->
+                        <li class="nav-item">
+                            <a href="/Facturas/Lista">
+                                <i class="fas fa-file-invoice"></i>
+                                <p>Cartera</p>
+                            </a>
+                        </li>
+
+
+                        <!-- REPORTE COBRADOR -->
+                        <li class="nav-item">
+                            <a href="/Facturas/Lista">
+                                <i class="fas fa-file-invoice"></i>
+                                <p>Reporte Cobrador</p>
+                            </a>
+                        </li>
+
+                        <!-- MOVIMIENTO DE PRESTAMO -->
+                        <li class="nav-item">
+                            <a href="/Facturas/Lista">
+                                <i class="fas fa-file-invoice"></i>
+                                <p>Movimiento de Prestamo</p>
+                            </a>
+                        </li>
+
+                        <!-- INFORED -->
+                        <li class="nav-item">
+                            <a href="/Facturas/Lista">
+                                <i class="fas fa-file-invoice"></i>
+                                <p>InfoRED</p>
+                            </a>
+                        </li> *@
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- End Sidebar -->
+        <!-- Main Panel -->
+        <div class="main-panel">
+            <div class="main-header">
+                <div class="main-header-logo">
+                    <!-- Logo Header (opcional duplicado) -->
+                    <div class="logo-header" data-background-color="dark">
+                        <a href="index.html" class="logo">
+                            <img src="@Url.Content("~/assets/img/kaiadmin/logo_light.svg")"
+                                 alt="navbar brand"
+                                 class="navbar-brand"
+                                 height="20" />
+                        </a>
+                        <div class="nav-toggle">
+                            <button class="btn btn-toggle toggle-sidebar">
+                                <i class="gg-menu-right"></i>
+                            </button>
+                            <button class="btn btn-toggle sidenav-toggler">
+                                <i class="gg-menu-left"></i>
+                            </button>
+                        </div>
+                        <button class="topbar-toggler more">
+                            <i class="gg-more-vertical-alt"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Navbar Header -->
+                <nav class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bottom">
+                    <div class="container-fluid">
+                        <ul class="navbar-nav topbar-nav ms-md-auto align-items-center">
+
+                            <!-- Usuario -->
+                            <li class="nav-item topbar-user dropdown hidden-caret">
+                                <a class="dropdown-toggle profile-pic" data-bs-toggle="dropdown" href="#" aria-expanded="false">
+                                    <div class="avatar-sm">
+                                        <div class="avatar avatar-xl rounded-circle d-flex align-items-center justify-content-center text-white bg-primary" style="width: 40px; height: 40px; font-size: 20px;">
+                                            @userName?.Substring(0, 1).ToUpper()
+                                        </div>
+                                    </div>
+                                    <span class="profile-username">
+                                        <span class="op-7">Hola,</span>
+                                        <span class="fw-bold">@userName</span>
+                                    </span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-user animated fadeIn">
+                                    <li>
+                                        <div class="user-box">
+                                            <div class="avatar-lg">
+                                                <div class="avatar avatar-xl rounded-circle d-flex align-items-center justify-content-center text-white bg-primary" style="width: 40px; height: 40px; font-size: 20px;">
+                                                    @userName?.Substring(0, 1).ToUpper()
+                                                </div>
+                                            </div>
+                                            <div class="u-text">
+                                                <h4>@userName</h4>
+                                                <p class="text-muted">@user</p>
+                                            </div>
+                                        </div>
+                                    </li>
+                                    <li>
+                                        <form class="form" method="post" asp-controller="Home" asp-action="Logout">
+                                            <button class="dropdown-item text-danger" type="submit">
+                                                <i class="fas fsa-sign-out-alt me-1"></i>
+                                                CERRAR APP
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+            </div> <!-- End of .main-panel -->
+            <!-- End Navbar -->
+
+            <div class="container">
+                <div class="page-inner">
+                    @RenderBody()
+                </div>
+
+            </div>
+
+            <footer class="footer">
+                <div class="container-fluid d-flex justify-content-between">
+                    <div class="copyright">
+                        2025, Creado <i class="fa fa-heart heart text-danger"></i> por
+                        <a href="http://www.themekita.com">DevCorena</a>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+</body>
+</html>
+<script>
+        /* Resto de las animaciones permanecen iguales */
+    // Mostrar el spinner
+    function showLoadingSpinner() {
+        const overlay = document.querySelector('.loadingspinner-overlay');
+        overlay.style.display = 'flex';
+    }
+
+    // Ocultar el spinner
+    function hideLoadingSpinner() {
+        const overlay = document.querySelector('.loadingspinner-overlay');
+        overlay.style.display = 'none';
+    }
+
+    // Ejemplo de uso
+    // showLoadingSpinner(); // Llamar para mostrar
+    // hideLoadingSpinner(); // Llamar para ocultar
+        // 🌎 FUNCIÓN PARA OBTENER LA FECHA ACTUAL DE EL SALVADOR
+    function obtenerFechaSalvador() {
+        // Crear fecha con zona horaria de El Salvador (UTC-6)
+        const ahora = new Date();
+
+        // El Salvador está en UTC-6 (CST - Central Standard Time)
+        // Convertir a zona horaria de El Salvador
+        const fechaSalvador = new Date(ahora.toLocaleString("en-US", {timeZone: "America/El_Salvador"}));
+
+        // Formatear como YYYY-MM-DD (formato ISO que espera tu API)
+        const año = fechaSalvador.getFullYear();
+        const mes = String(fechaSalvador.getMonth() + 1).padStart(2, '0');
+        const dia = String(fechaSalvador.getDate()).padStart(2, '0');
+
+        return `${año}-${mes}-${dia}`;
+    }
+</script>

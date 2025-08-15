@@ -1,0 +1,209 @@
+﻿@{
+    ViewData["Title"] = "Prestamos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <h4 class="card-title">Filtro</h4>
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="position:relative;">
+                    <div class="row">
+                        <div class="col-md-2">
+                            <label for="estadoFiltro" class="form-label">Tipo Estado</label>
+                            <select id="estadoFiltro" class="form-select form-select-sm">
+                                <option value="T">Todos</option>
+                                <option value="A">Activo</option>
+                                <option value="C">Cancelado</option>
+                                <option value="E">Eliminado</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="txtFechaDesde" class="form-label">Inicio Busqueda</label>
+                            <input type="date" id="txtFechaDesde" class="form-control form-control-sm" placeholder="Fecha Desde" />
+                        </div>
+                        <div class="col-md-3">
+                            <label for="txtFechaDesde" class="form-label">Fin Busqueda</label>
+                            <input type="date" id="txtFechaHasta" class="form-control form-control-sm" placeholder="Fecha Hasta" />
+                        </div>
+                        <div class="col-md-2">
+                            <label for="selectExtra" class="form-label">Extra</label>
+                            <select id="selectExtra" class="form-select form-select-sm">
+                                <option value="1">Fecha Prestamo</option>
+                                <option value="2">Fecha Cancelación</option>
+                                <option value="3">Sin Aplicar Fecha</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <br />
+                            <button type="button" id="btnFiltrar" class="btn btn-primary">Filtrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row" id="contenedorTabla" style="display: none;">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <h4 class="card-title">Lista de Prestamos</h4>
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="position:relative;">
+                    <div class="table-responsive">
+                        <table id="tblPrestamos" class="display table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detalleClienteModal" tabindex="-1" aria-labelledby="detalleClienteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold" id="detalleClienteModalLabel">Detalles del Prestamo # <span id="clienteNumeroPrestamo"></span></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card card-round">
+                            <div class="card-body" style="max-height: 442px; overflow-y: auto;">
+                                <div class="card-head-row card-tools-still-right">
+                                    <div class="card-title"><span id="clienteEstado"></span></div>
+                                </div>
+                                <div class="card-list py-4">
+                                    <div class="item-list">
+                                        <div class="info-user ms-3">
+                                            <div class="username"><span id="clienteNombre"> </span></div>
+                                            <div class="status">Cliente</div>
+                                        </div>
+                                    </div>
+                                    <div class="item-list">
+                                        <div class="info-user ms-3">
+                                            <div class="username"><span id="clienteFecha"></span></div>
+                                            <div class="status">Fecha</div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            <div class="item-list">
+                                                <div class="info-user ms-3">
+                                                    <div class="username"><span id="clienteMonto"></span></div>
+                                                    <div class="status">Monto</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="item-list">
+                                                <div class="info-user ms-3">
+                                                    <div class="username"><span id="clienteTasa"></span></div>
+                                                    <div class="status">Tasa</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            <div class="item-list">
+                                                <div class="info-user ms-3">
+                                                    <div class="username"><span id="clienteCoutas"></span></div>
+                                                    <div class="status">Numero Coutas</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="item-list">
+                                                <div class="info-user ms-3">
+                                                    <div class="username"><span id="clienteMontoCouta"></span></div>
+                                                    <div class="status">Cuotas</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            <div class="item-list">
+                                                <div class="info-user ms-3">
+                                                    <div class="username"><span id="clienteinteres"></span></div>
+                                                    <div class="status">Interese</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+
+                                            <div class="item-list">
+                                                <div class="info-user ms-3">
+                                                    <div class="username"><span id="clienteSaldo"></span></div>
+                                                    <div class="status">Saldo</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                  
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card card-round">
+                            <div class="card-header">
+                                <div class="card-head-row card-tools-still-right">
+                                    <div class="card-title">Historial de Pagos</div>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive" style="max-height: 375px; overflow-y: auto;">
+                                    <!-- Projects table -->
+                                    <table class="display table table-striped table-hover" id="tblpagosdetalles">
+                                        <thead>
+                                            <tr>
+                                                <th>N° Cuota</th>
+                                                <th>Monto</th>
+                                                <th>Pago</th>
+                                                <th>Sistema</th>
+                                                <th>Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script src="~/js/prestamo.js"></script>

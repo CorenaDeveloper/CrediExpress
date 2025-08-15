@@ -1,0 +1,282 @@
+﻿@model List<Credi_Express.ModelVM.CalendarioVM>
+@{
+    ViewData["Title"] = "Calendario";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var eventosJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.Select(c => new
+        {
+            id = c.IdCalendario,
+            title = c.Descripcion,
+            start = c.Fecha,
+            allDay = true
+        })
+    );
+}
+<style>
+    .fc .fc-event {
+        background-color: #1a2035;
+        border: none;
+        color: white;
+        font-weight: 500;
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
+
+    .fc .fc-col-header-cell,
+    .fc .fc-multimonth-header,
+    .fc .fc-day-header {
+        background-color: #1a2035 !important;
+        color: white !important;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    .fc .fc-col-header-cell-cushion {
+        color: white !important;
+    }
+
+    .fc-theme-standard .fc-list-day:hover,
+    .fc-theme-standard .fc-list-day-cushion:hover {
+        background-color: #1a2035 !important;
+        color: white !important;
+    }
+
+    .fc .fc-list-day-cushion {
+        background-color: #1a2035 !important;
+        color: white !important;
+    }
+    /* Números del día dentro de cada celda */
+    .fc .fc-daygrid-day-number {
+        color: black;
+        font-weight: 500;
+    }
+
+    /* También aplica en vista multiMonth */
+    .fc-multimonth .fc-daygrid-day-number {
+        color: black;
+    }
+
+    .fc .fc-event:hover {
+        background-color: #3c3f53;
+    }
+
+    .fc .fc-button {
+        background-color: #6c757d;
+        border-color: #6c757d;
+        color: #fff;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.875rem;
+        border-radius: 0.25rem;
+    }
+
+        .fc .fc-button:hover {
+            background-color: #5c636a;
+            border-color: #565e64;
+        }
+
+        .fc .fc-button:disabled {
+            background-color: #adb5bd;
+            border-color: #adb5bd;
+            color: white;
+        }
+
+    .fc .fc-button-group {
+        margin-right: 0.5rem;
+    }
+
+    .fc .fc-toolbar-title {
+        font-weight: bold;
+        color: #212529;
+    }
+
+    /* Encabezado del día en vista de lista */
+    .fc .fc-list-day-cushion {
+        background-color: #1a2035 !important;
+        color: white !important;
+        font-weight: 600;
+    }
+
+        /* Al pasar el mouse sobre un grupo de día (hover) */
+        .fc .fc-list-day:hover,
+        .fc .fc-list-day-cushion:hover {
+            background-color: #1a2035 !important;
+            color: white !important;
+        }
+
+    /* Encabezado del evento individual */
+    .fc .fc-list-event {
+        background-color: #1a2035 !important;
+        border: none;
+        color: white;
+    }
+
+        /* Texto dentro del evento */
+        .fc .fc-list-event .fc-event-time,
+        .fc .fc-list-event .fc-event-title {
+            color: white !important;
+        }
+
+    /* Color verde mate suave para días con eventos */
+    .fc-day.has-event {
+        background-color: #d4edda !important; /* Verde mate claro */
+    }
+
+</style>
+
+<h1>Calendario Feriado</h1>
+
+<div id='calendar'></div>
+<!-- Modal -->
+<div class="modal fade" id="nuevoDiaFeriado" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Agregar dia feriado</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formFechaCalendario" action="/Auxiliares/CrearFechaFeriada" method="post" class="w-100 h-100">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-12">
+                            <label for="fecha" class="form-label">Fecha</label>
+                            <input type="date" name="Fecha" class="form-control" id="fecha" placeholder="Fecha del evento" required oninvalid="this.setCustomValidity('La fecha del calendario es obligatoria')" oninput="this.setCustomValidity('')" readonly/>
+                        </div>
+                        <div class="col-12">
+                            <label for="descripcion" class="form-label">Descripción</label>
+                            <input type="text" name="Descripcion" class="form-control" id="descripcion" placeholder="Descripción del evento" required oninvalid="this.setCustomValidity('La descripción de la fecha es obligatoria')" oninput="this.setCustomValidity('')" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-secondary">Registrar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar -->
+<div class="modal fade" id="editarDiaFeriado" tabindex="-1" aria-labelledby="editarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="editarModalLabel">Editar o eliminar feriado</h1>
+                <button type="button" class="btn btn-danger ms-auto" data-bs-toggle="modal" data-bs-target="#eliminarFechaFeriado">
+                    Eliminar
+                </button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form id="formFechaCalendario" action="/Auxiliares/EdiarCalendarioFeriado" method="post" class="w-100 h-100">
+                <div class="modal-body">
+                    <input type="hidden" id="editarIdFecha" name="Idcalendario" />
+                    <div class="col-12">
+                        <label for="fecha" class="form-label">Fecha</label>
+                        <input type="date" name="Fecha" class="form-control" id="editarFecha" placeholder="Fecha del evento" required oninvalid="this.setCustomValidity('La fecha del calendario es obligatoria')" oninput="this.setCustomValidity('')" readonly />
+                    </div>
+                    <div class="col-12">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <input type="text" name="Descripcion" class="form-control" id="editarDescripcion" placeholder="Descripción del evento" required oninvalid="this.setCustomValidity('La descripción de la fecha es obligatoria')" oninput="this.setCustomValidity('')" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-secondary">Guardar cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="eliminarFechaFeriado" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="formFechaCalendario" action="/Auxiliares/EliminarCalendarioFeriado" method="post" class="w-100 h-100">
+                <div class="modal-body">
+                    <input type="hidden" id="eliminarIdFecha" name="id" />
+                    <div class="col-12">
+                        <label for="fecha" class="form-label">Fecha</label>
+                        <input type="date" name="Fecha" class="form-control" id="eliminarFecha" placeholder="Fecha del evento" required oninvalid="this.setCustomValidity('La fecha del calendario es obligatoria')" oninput="this.setCustomValidity('')" readonly />
+                    </div>
+                    <div class="col-12">
+                        <label for="descripcion" class="form-label">Descripción</label>
+                        <input type="text" name="Descripcion" class="form-control" id="eliminarDescripcion" placeholder="Descripción del evento" required oninvalid="this.setCustomValidity('La descripción de la fecha es obligatoria')" oninput="this.setCustomValidity('')" readonly />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-secondary">Eliminar Registro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/calendario.js"></script>
+<script>
+     document.addEventListener('DOMContentLoaded', function () {
+        const calendarEl = document.getElementById('calendar');
+        const eventos = @Html.Raw(eventosJson);
+
+        const fechasConEventos = eventos.map(e => new Date(e.start).toISOString().split('T')[0]);
+
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            locale: 'es',
+            themeSystem: 'bootstrap5',
+            initialView: 'multiMonthYear',
+            initialDate: new Date().getFullYear() + '-01-01',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'multiMonthYear,dayGridMonth'
+            },
+            selectable: true,
+            dayMaxEvents: true,
+            events: eventos,
+            dayCellDidMount: function (info) {
+                const fecha = info.date.toISOString().split('T')[0];
+                if (fechasConEventos.includes(fecha)) {
+                    info.el.classList.add('has-event');
+                }
+            },
+            dateClick: function (info) {
+                const fechaClick = info.dateStr;
+
+                const eventoExistente = eventos.find(e => {
+                    const fechaEvento = new Date(e.start).toISOString().split('T')[0];
+                    return fechaEvento === fechaClick;
+                });
+
+                if (eventoExistente) {
+                    // Abre modal de edición
+                    const modalEditar = new bootstrap.Modal(document.getElementById('editarDiaFeriado'));
+                    $('#editarIdFecha').val(eventoExistente.id); // Asigna el ID
+                    $('#editarDescripcion').val(eventoExistente.title);
+                    $('#editarFecha').val(fechaClick);
+                    modalEditar.show();
+
+                    // También llena el modal de eliminación
+                    $('#eliminarIdFecha').val(eventoExistente.id);
+                    $('#eliminarDescripcion').val(eventoExistente.title);
+                    $('#eliminarFecha').val(fechaClick);
+
+                } else {
+                    // Modal para nuevo feriado
+                    const modalNuevo = new bootstrap.Modal(document.getElementById('nuevoDiaFeriado'));
+                    document.getElementById('fecha').value = fechaClick;
+                    modalNuevo.show();
+                }
+            }
+
+
+        });
+
+        calendar.render();
+    });
+
+</script>

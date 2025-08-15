@@ -1,0 +1,174 @@
+﻿@{
+    ViewData["Title"] = "login";
+    Layout = null;
+}
+@if (TempData["Mensaje"] != null)
+{
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            showAlert("@TempData["TipoMensaje"]", "@TempData["Mensaje"]");
+        });
+    </script>
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Credi Express</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link href="~/css/login.css" rel="stylesheet" />
+    <script src="~/js/alertas.js"></script>
+</head>
+<body>
+    <div id="alertContainer" class="alert-container"></div>
+
+    <div class="background-shapes">
+        <div class="shape"></div>
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="brand-section">
+                <div class="brand-logo">
+                    <i class="fas fa-hand-holding-usd"></i>
+                </div>
+                <h1 class="brand-title">Credi Express</h1>
+                <p class="brand-subtitle">Sistema de Gestión Crediticia</p>
+            </div>
+
+            <form id="loginForm" method="post" asp-controller="Home" asp-action="LoginSession">
+                <div class="col-md-12">
+                    <label class="input-label">Usuario</label>
+                    <div class="input-container">
+                        <div class="input-icon">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <input type="text"
+                               name="usuario"
+                               class="form-input"
+                               placeholder="Ingresa tu usuario"
+                               required
+                               autocomplete="username" />
+                    </div>
+                </div>
+
+                <div class="col-md-12">
+                    <label class="input-label">Contraseña</label>
+                    <div class="input-container">
+                        <div class="input-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <input type="password"
+                               name="password"
+                               class="form-input"
+                               placeholder="Ingresa tu contraseña"
+                               required
+                               autocomplete="current-password" />
+                    </div>
+                </div>
+
+                <div class="remember-forgot">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="remember">
+                        <label class="form-check-label" for="remember">Recordarme</label>
+                    </div>
+                </div>
+
+                <button type="submit" class="login-button" id="loginBtn">
+                    <div class="loading-spinner" id="loadingSpinner">
+                        <div class="spinner"></div>
+                    </div>
+                    <span class="button-text">Iniciar Sesión</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Alert container -->
+    <div class="alert-container" id="alertContainer"></div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Función para mostrar alertas
+            function showAlert(type, message) {
+                const alertHtml = `
+                    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `;
+
+                $('#alertContainer').html(alertHtml);
+
+                // Auto-dismiss after 5 seconds
+                setTimeout(function() {
+                    $('.alert').alert('close');
+                }, 5000);
+            }
+
+            // Manejo del formulario de login
+            $('#loginForm').on('submit', function(e) {
+                e.preventDefault();
+
+                const $button = $('#loginBtn');
+                const $spinner = $('#loadingSpinner');
+
+                // Validar campos
+                const usuario = $('input[name="usuario"]').val().trim();
+                const password = $('input[name="password"]').val().trim();
+
+                if (!usuario || !password) {
+                    showAlert('danger', 'Por favor completa todos los campos');
+                    return;
+                }
+
+                // Mostrar loading
+                $button.addClass('loading');
+                $spinner.addClass('show');
+
+                // Simular delay para mostrar el loading (remover en producción)
+                setTimeout(() => {
+                    // Enviar formulario
+                    this.submit();
+                }, 1000);
+            });
+
+            // Efecto focus en inputs
+            $('.form-input').on('focus', function() {
+                $(this).closest('.input-container').addClass('focused');
+            }).on('blur', function() {
+                $(this).closest('.input-container').removeClass('focused');
+            });
+
+            // Mostrar mensaje de error si existe (desde el servidor)
+            @if (TempData["Error"] != null)
+            {
+                    <text>
+                    setTimeout(function() {
+                        showAlert('danger', '@TempData["Error"]');
+                    }, 500);
+                    </text>
+            }
+
+            // Mostrar mensaje de éxito si existe
+            @if (TempData["Success"] != null)
+            {
+                    <text>
+                    setTimeout(function() {
+                        showAlert('success', '@TempData["Success"]');
+                    }, 500);
+                    </text>
+            }
+        });
+    </script>
+</body>
+</html>

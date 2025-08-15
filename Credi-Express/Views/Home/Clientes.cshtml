@@ -1,0 +1,1060 @@
+﻿@model List<Credi_Express.ModelVM.ClienteConGestorVM>
+@{
+    ViewData["Title"] = "Clientes";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+
+    #tblfacturacion thead th {
+        font-size: 11px;
+    }
+
+    #tblCLientes tbody td,
+    #tblCLientes thead th,
+    #tblCLientes tfoot th {
+        padding: 4px 8px !important;
+        font-size: 13px !important;
+    }
+
+</style>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <h4 class="card-title">Lista de Clientes</h4>
+                    <button type="button" class="btn btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#nuevoCliente">Nuevo Cliente</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="position:relative;">
+                    <div class="table-responsive">
+                        <table id="tblCLientes" class="display table table-striped table-hover compact">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Dui</th>
+                                    <th>Teléfono</th>
+                                    <th>Ejecutivo</th>
+                                    <th class="text-wrap">Opción</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="verClienteModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primario1 text-white">
+                <h5 class="modal-title" id="verClienteModalLabel">
+                    <i class="fas fa-user-circle me-2"></i>
+                    Detalle del Cliente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-0">
+                <!-- Header del Cliente -->
+                <div class="bg-light border-bottom p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="mb-1 text-primary">
+                                <span id="modalNombre"></span> <span id="modalApellido"></span>
+                            </h4>
+                            <div class="d-flex gap-4 text-muted">
+                                <span><i class="fas fa-id-card me-1"></i><strong>DUI:</strong> <span id="modalDui"></span></span>
+                                <span><i class="fas fa-phone me-1"></i><strong>Celular:</strong> <span id="modalCelular"></span></span>
+                                <span><i class="fas fa-user-tie me-1"></i><strong>Ejecutivo:</strong> <span id="modalGestor"></span></span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <span class="badge bg-success fs-6 px-3 py-2" id="modalActivo"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navegación por Tabs -->
+                <div class="container-fluid p-4">
+                    <ul class="nav nav-pills nav-fill mb-4" id="clienteTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="info-personal-tab" data-bs-toggle="pill" data-bs-target="#info-personal" type="button" role="tab">
+                                <i class="fas fa-user me-2"></i>Información Personal
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="documentos-tab" data-bs-toggle="pill" data-bs-target="#documentos" type="button" role="tab">
+                                <i class="fas fa-file-image me-2"></i>Documentos
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="negocio-tab" data-bs-toggle="pill" data-bs-target="#negocio" type="button" role="tab">
+                                <i class="fas fa-store me-2"></i>Negocio
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="ubicacion-tab" data-bs-toggle="pill" data-bs-target="#ubicacion" type="button" role="tab">
+                                <i class="fas fa-map-marker-alt me-2"></i>Ubicación
+                            </button>
+                        </li>
+                    </ul>
+
+                    <!-- Contenido de los Tabs -->
+                    <div class="tab-content" id="clienteTabsContent">
+
+                        <!-- Tab 1: Información Personal -->
+                        <div class="tab-pane fade show active" id="info-personal" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h6 class="mb-3"><i class="fas fa-user me-2"></i>Datos Personales</h6>
+                                            <div class="row g-3">
+                                                <div class="col-6">
+                                                    <dt class="text-primary mb-1">NIT:</dt>
+                                                    <dd class="mb-3" id="modalNit"></dd>
+                                                </div>
+                                                <div class="col-6">
+                                                    <dt class="text-primary mb-1">Fecha de Ingreso:</dt>
+                                                    <dd class="mb-3" id="modalFechaIngreso"></dd>
+                                                </div>
+                                                <div class="col-6">
+                                                    <dt class="text-primary mb-1">Teléfono:</dt>
+                                                    <dd class="mb-3" id="modalTelefono"></dd>
+                                                </div>
+                                                <div class="col-6">
+                                                    <dt class="text-primary mb-1">Fecha de Nacimiento:</dt>
+                                                    <dd class="mb-3" id="modalFechaNacimiento"></dd>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h6 class="mb-3"><i class="fas fa-users me-2"></i>Referencias Personales</h6>
+                                            <div class="row g-3">
+                                                <div class="col-12">
+                                                    <div class="border-start border-4 border-success ps-3 mb-3">
+                                                        <dt class="text-success mb-1">Referencia 1:</dt>
+                                                        <dd class="mb-1" id="modalReferencia1"></dd>
+                                                        <dt class="text-success mb-1">Teléfono:</dt>
+                                                        <dd class="mb-0" id="modalTelReferencia1"></dd>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12">
+                                                    <div class="border-start border-4 border-success ps-3">
+                                                        <dt class="text-success mb-1">Referencia 2:</dt>
+                                                        <dd class="mb-1" id="modalReferencia2"></dd>
+                                                        <dt class="text-success mb-1">Teléfono:</dt>
+                                                        <dd class="mb-0" id="modalTelReferencia2"></dd>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: Documentos -->
+                        <div class="tab-pane fade" id="documentos" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6 class="mb-3"><i class="fas fa-id-card me-2"></i>Documento de Identidad</h6>
+                                            <div class="row g-4">
+                                                <div class="col-6">
+                                                    <div class="text-center">
+                                                        <h6 class="text-info mb-3">DUI Frente</h6>
+                                                        <div class="border rounded p-2 bg-light">
+                                                            <img id="imgDuiFrente" src="" class="img-fluid rounded clickable-thumb" style="height: 150px; object-fit: contain; width: 100%; cursor: pointer;" alt="DUI Frente" onclick="ampliarImagen(this.src, 'DUI Frente')">
+                                                        </div>
+                                                        <button type="button" class="btn btn-primary btn-sm mt-2" onclick="descargarImagen(document.getElementById('imgDuiFrente').src, 'DUI_Frente')">
+                                                            <i class="fas fa-download me-1"></i>Descargar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <div class="text-center">
+                                                        <h6 class="text-info mb-3">DUI Atrás</h6>
+                                                        <div class="border rounded p-2 bg-light">
+                                                            <img id="imgDuiAtras" src="" class="img-fluid rounded clickable-thumb" style="height: 150px; object-fit: contain; width: 100%; cursor: pointer;" alt="DUI Atrás" onclick="ampliarImagen(this.src, 'DUI Atrás')">
+                                                        </div>
+                                                        <button type="button" class="btn btn-primary btn-sm mt-2" onclick="descargarImagen(document.getElementById('imgDuiAtras').src, 'DUI_Atras')">
+                                                            <i class="fas fa-download me-1"></i>Descargar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <!-- Botón para descargar todos los documentos -->
+                                            <div class="text-center mt-4">
+                                                <button type="button" class="btn btn-success" onclick="descargarTodosDocumentos()">
+                                                    <i class="fas fa-download me-2"></i>Descargar Todos los Documentos
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-body d-flex align-items-center justify-content-center">
+                                            <div id="fotoNegocioContent" class="carousel slide" data-bs-ride="carousel" style="width: 100%; max-width: 400px;">
+                                                <div class="carousel-indicators"></div>
+                                                <div class="carousel-inner rounded"></div>
+                                                <button class="carousel-control-prev" type="button" data-bs-target="#fotoNegocioContent" data-bs-slide="prev">
+                                                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                                                    <span class="visually-hidden">Anterior</span>
+                                                </button>
+                                                <button class="carousel-control-next" type="button" data-bs-target="#fotoNegocioContent" data-bs-slide="next">
+                                                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                                                    <span class="visually-hidden">Siguiente</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 3: Negocio -->
+                        <div class="tab-pane fade" id="negocio" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6 class="mb-3"><i class="fas fa-store me-2"></i>Información del Negocio</h6>
+                                            <div class="row mb-4">
+                                                <div class="col-md-12">
+                                                    <div class="p-3 bg-light rounded">
+                                                        <dt class="text-dark mb-2"><i class="fas fa-cogs me-2"></i>Giro del Negocio:</dt>
+                                                        <dd class="h5 text-primary mb-0" id="modalGiro"></dd>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <h6 class="text-dark mb-3"><i class="fas fa-images me-2"></i>Fotos del Negocio</h6>
+                                            <div class="row g-3">
+                                                <div class="col-md-3 col-sm-6">
+                                                    <div class="card border-0 shadow-sm">
+                                                        <div class="card-body p-2 text-center">
+                                                            <small class="text-muted d-block mb-2">Foto 1</small>
+                                                            <img id="imgNegocio1" src="" class="img-fluid rounded clickable-thumb" style="height: 120px; object-fit: cover; width: 100%; cursor: pointer;" alt="Foto 1" onclick="ampliarImagen(this.src, 'Foto del Negocio 1')">
+                                                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="descargarImagen(document.getElementById('imgNegocio1').src, 'Negocio_Foto1')">
+                                                                <i class="fas fa-download"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3 col-sm-6">
+                                                    <div class="card border-0 shadow-sm">
+                                                        <div class="card-body p-2 text-center">
+                                                            <small class="text-muted d-block mb-2">Foto 2</small>
+                                                            <img id="imgNegocio2" src="" class="img-fluid rounded clickable-thumb" style="height: 120px; object-fit: cover; width: 100%; cursor: pointer;" alt="Foto 2" onclick="ampliarImagen(this.src, 'Foto del Negocio 2')">
+                                                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="descargarImagen(document.getElementById('imgNegocio2').src, 'Negocio_Foto2')">
+                                                                <i class="fas fa-download"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3 col-sm-6">
+                                                    <div class="card border-0 shadow-sm">
+                                                        <div class="card-body p-2 text-center">
+                                                            <small class="text-muted d-block mb-2">Foto 3</small>
+                                                            <img id="imgNegocio3" src="" class="img-fluid rounded clickable-thumb" style="height: 120px; object-fit: cover; width: 100%; cursor: pointer;" alt="Foto 3" onclick="ampliarImagen(this.src, 'Foto del Negocio 3')">
+                                                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="descargarImagen(document.getElementById('imgNegocio3').src, 'Negocio_Foto3')">
+                                                                <i class="fas fa-download"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3 col-sm-6">
+                                                    <div class="card border-0 shadow-sm">
+                                                        <div class="card-body p-2 text-center">
+                                                            <small class="text-muted d-block mb-2">Foto 4</small>
+                                                            <img id="imgNegocio4" src="" class="img-fluid rounded clickable-thumb" style="height: 120px; object-fit: cover; width: 100%; cursor: pointer;" alt="Foto 4" onclick="ampliarImagen(this.src, 'Foto del Negocio 4')">
+                                                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="descargarImagen(document.getElementById('imgNegocio4').src, 'Negocio_Foto4')">
+                                                                <i class="fas fa-download"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Botón para descargar todas las fotos -->
+                                            <div class="text-center mt-4">
+                                                <button type="button" class="btn btn-info" onclick="descargarTodasFotos()">
+                                                    <i class="fas fa-download me-2"></i>Descargar Todas las Fotos
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 4: Ubicación -->
+                        <div class="tab-pane fade" id="ubicacion" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6 class="mb-3"><i class="fas fa-map-marker-alt me-2"></i>Ubicación y Dirección</h6>
+                                            <div class="row mb-4">
+                                                <div class="col-md-6">
+                                                    <dt class="text-secondary mb-2"><i class="fas fa-home me-2"></i>Dirección:</dt>
+                                                    <dd class="fs-6" id="modalDireccion"></dd>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <dt class="text-secondary mb-2"><i class="fas fa-map me-2"></i>Departamento:</dt>
+                                                    <dd class="fs-6" id="modalNombreDepartamento"></dd>
+                                                </div>
+                                            </div>
+
+                                            <div class="border rounded p-2">
+                                                <div id="map" style="height: 400px; width: 100%; border-radius: 8px;"></div>
+                                            </div>
+
+                                            <!-- Botón para abrir en Google Maps -->
+                                            <div class="text-center mt-3">
+                                                <button type="button" class="btn btn-outline-success" onclick="abrirEnGoogleMaps()">
+                                                    <i class="fab fa-google me-2"></i>Abrir en Google Maps
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal simple para ampliar imágenes -->
+<div class="modal fade" id="imagenAmpliada" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="imagenAmpliadaTitle">Vista Ampliada</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="imagenAmpliada-img" src="" class="img-fluid" alt="Imagen ampliada">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" onclick="descargarImagenAmpliada()">
+                    <i class="fas fa-download me-2"></i>Descargar
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Modal para editar cliente -->
+<div class="modal fade" id="editarClienteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen" role="document">
+        <form id="formEditarCliente" action="/Auxiliares/EditarCliente" method="post" class="w-100 h-100" enctype="multipart/form-data">
+            <div class="modal-content h-100">
+                <div class="modal-header bg-primario1 text-white">
+                    <h5 class="modal-title text-white">
+                        <i class="fas fa-user-edit me-2"></i>
+                        Editar Cliente
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-secundario overflow-auto overflow-x-hidden">
+                    <div class="container-fluid">
+                        <!-- Navegación por Pasos -->
+                        <ul class="nav nav-pills nav-fill mb-4" id="editClienteTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="edit-datos-tab" data-bs-toggle="pill" data-bs-target="#edit-datos" type="button" role="tab">
+                                    <i class="fas fa-user me-2"></i>Datos Personales
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="edit-documentos-tab" data-bs-toggle="pill" data-bs-target="#edit-documentos" type="button" role="tab">
+                                    <i class="fas fa-id-card me-2"></i>Documentos
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="edit-ubicacion-tab" data-bs-toggle="pill" data-bs-target="#edit-ubicacion" type="button" role="tab">
+                                    <i class="fas fa-map-marker-alt me-2"></i>Ubicación
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="edit-negocio-tab" data-bs-toggle="pill" data-bs-target="#edit-negocio" type="button" role="tab">
+                                    <i class="fas fa-store me-2"></i>Negocio
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Contenido de los Tabs -->
+                        <div class="tab-content" id="editClienteTabsContent">
+                            <!-- Tab 1: Datos Personales -->
+                            <div class="tab-pane fade show active" id="edit-datos" role="tabpanel">
+                                <div class="row">
+                                    <input type="hidden" name="Id" id="editId" />
+
+                                    <!-- Información Básica -->
+                                    <div class="col-lg-6">
+                                        <div class="card shadow-sm mb-4">
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-user-circle me-2"></i>Información Básica</h6>
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control form-control-sm" id="editNombre" name="Nombre" placeholder="Escribir nombres" required oninvalid="this.setCustomValidity('El campo Nombre es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="editNombre">Nombre</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control form-control-sm" id="editApellido" name="Apellido" placeholder="Escribe Apellidos" required oninvalid="this.setCustomValidity('El campo Apellido es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="editApellido">Apellido</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control dui" id="editDui" name="Dui" placeholder="00000000-0" maxlength="10" required pattern="^\d{8}-\d{1}$" oninvalid="this.setCustomValidity('El DUI debe tener el formato 00000000-0')" oninput="this.setCustomValidity('')">
+                                                            <label for="editDui">DUI</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control nit" id="editNit" name="Nit" placeholder="0000-000000-000-0" />
+                                                            <label for="editNit">NIT</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="date" class="form-control" id="editFechaNacimiento" name="FechaNacimiento" required oninvalid="this.setCustomValidity('Fecha Nacimiento es obligatoria')" oninput="this.setCustomValidity('')">
+                                                            <label for="editFechaNacimiento">Fecha de Nacimiento</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <select class="form-select" id="editGenero" name="Sexo">
+                                                                <option value="M">Masculino</option>
+                                                                <option value="F">Femenino</option>
+                                                                <option value="">Indefinido</option>
+                                                            </select>
+                                                            <label for="editGenero">Género</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-12">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control" id="editProfesion" name="Profesion" placeholder="Escribe..." required oninvalid="this.setCustomValidity('El campo Profesión y oficio es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="editProfesion">Profesión y Oficio</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <div class="form-check">
+                                                            <input type="checkbox" class="form-check-input" id="editTipoPer" name="TipoPer" value="1" checked="checked">
+                                                            <label class="form-check-label" for="editTipoPer">¿Persona Natural?</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <div class="form-check">
+                                                            <input type="checkbox" class="form-check-input" id="editActivo" name="Activo" value="1" checked="checked">
+                                                            <label class="form-check-label" for="editActivo">¿Activo?</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-12">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="email" class="form-control" id="editEmail" name="Email" placeholder="Escribe..." required oninvalid="this.setCustomValidity('El correo debe ser obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="editEmail">Correo Electronico</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Contacto -->
+                                    <div class="col-lg-6">
+                                        <div class="card shadow-sm mb-4">
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-phone me-2"></i>Información de Contacto</h6>
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control telefono" id="editTelefono" name="Telefono" placeholder="0000-0000">
+                                                            <label for="editTelefono">Teléfono</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control telefono" id="editCelular" name="Celular" placeholder="0000-0000" required oninvalid="this.setCustomValidity('El celular es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="editCelular">Celular</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-12">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <select class="form-select" id="editGestor" name="Idgestor">
+                                                                <label for="editGestor">Gestor</label>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Referencias -->
+                                        <div class="card shadow-sm">
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-users me-2"></i>Referencias Personales</h6>
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control" id="editReferencia1" name="Referencia1" placeholder="Escribe Nombre Completo" required oninvalid="this.setCustomValidity('El nombre completo es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="editReferencia1">Referencia 1</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control telefono" id="editTelReferencia1" name="Telref1" placeholder="0000-0000" required oninvalid="this.setCustomValidity('el telefono es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="editTelReferencia1">Telefono Referencia 1</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control" id="editReferencia2" name="Referencia2" placeholder="Escribe Nombre Completo" required oninvalid="this.setCustomValidity('El campo Nombre es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="editReferencia2">Referencia 2</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control telefono" id="editTelReferencia2" name="Telref2" placeholder="0000-0000" required oninvalid="this.setCustomValidity('El campo Nombre es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="editTelReferencia2">Telefono Referencia 2</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab 2: Documentos -->
+                            <div class="tab-pane fade" id="edit-documentos" role="tabpanel">
+                                <div class="row justify-content-center">
+                                    <div class="col-lg-10">
+                                        <div class="card shadow-sm">
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-file-image me-2"></i>Documentos de Identidad</h6>
+                                                <div class="row g-4">
+                                                    <div class="col-md-6">
+                                                        <div class="text-center">
+                                                            <label for="editDuiFrente" class="form-label">DUI Frente</label>
+                                                            <input type="file" name="DuiFrente" id="editDuiFrente" class="form-control mb-3" accept="image/*">
+                                                            <div class="border rounded-3 p-3 bg-light">
+                                                                <img id="previewDuiFrente" src="~/assets/img/duiFrente.png" class="img-thumbnail mt-2" style="width: 100%; max-height: 225px; object-fit: contain;">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="text-center">
+                                                            <label for="editDuiDetras" class="form-label">DUI Detrás</label>
+                                                            <input type="file" name="DuiDetras" id="editDuiDetras" class="form-control mb-3" accept="image/*">
+                                                            <div class="border rounded-3 p-3 bg-light">
+                                                                <img id="previewDuiDetras" src="~/assets/img/arashmil.jpg" class="img-thumbnail mt-2" style="width: 100%; max-height: 225px; object-fit: contain;">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab 3: Ubicación -->
+                            <div class="tab-pane fade" id="edit-ubicacion" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="card shadow-sm h-100">
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-map-marker-alt me-2"></i>Dirección</h6>
+                                                <div class="row g-3">
+                                                    <div class="col-md-4 mb-3">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <select class="form-select" id="editDepartamento" name="Departamento">
+                                                            </select>
+                                                            <label for="editDepartamento">Departamento</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-8 mb-3">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <textarea class="form-control" id="editDireccion" name="Direccion" rows="2" placeholder="Colonia, Apartamento, Psj, block n° casa" required oninvalid="this.setCustomValidity('La dirección es obligatoria')" oninput="this.setCustomValidity('')"></textarea>
+                                                            <label for="editDireccion">Dirección</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-12 mb-3">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control" id="editBuscadorDireccion" placeholder="Ingresa la dirección para buscar">
+                                                            <div id="suggestions-container" class="list-group" style="max-height: 200px; overflow-y: auto; position: absolute; z-index: 999; width: 100%; display: none;"></div>
+                                                            <label for="editBuscadorDireccion">Buscar Dirección</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control" id="editLatitud" name="Latitud" readonly>
+                                                            <label for="editLatitud">Latitud</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control" id="editLongitud" name="Longitud" readonly>
+                                                            <label for="editLongitud">Longitud</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <div id="mensajeUbicandoEdit" class="alert alert-info mt-2" style="display: none;">
+                                                            📍 Obteniendo tu ubicación actual...
+                                                        </div>
+                                                        <button type="button" class="btn btn-primary mb-2" id="btnUbicacionActualEdit">Usar mi ubicación actual</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="card shadow-sm h-100">
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-map me-2"></i>Ubicación</h6>
+                                                <div id="editMap" style="height: 300px; border: 1px solid #ccc;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab 4: Negocio -->
+                            <div class="tab-pane fade" id="edit-negocio" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="card shadow-sm mb-4">
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-store me-2"></i>Información del Negocio</h6>
+                                                <div class="row g-3">
+                                                    <div class="col-md-6 mb-3">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control" id="editGiro" name="Giro" placeholder="Ejemplo Tienda Comercial, Ropa, Tienda" required oninvalid="this.setCustomValidity('El Giro del negocio es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="editGiro">Giro</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card shadow-sm">
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-camera me-2"></i>Fotos del Negocio</h6>
+                                                <div class="row g-4">
+                                                    <div class="col-md-3 mb-3">
+                                                        <label for="editFotoNegocio1" class="form-label">Foto Negocio 1</label>
+                                                        <input type="file" class="form-control" name="FotoNegocio1" id="editFotoNegocio1" accept="image/*">
+                                                        <img id="previewFotoNegocio1" src="~/assets/img/foto1.jpg" class="img-thumbnail mt-2" style="width: 100%; height: 225px; object-fit: contain;">
+                                                    </div>
+                                                    <div class="col-md-3 mb-3">
+                                                        <label for="editFotoNegocio2" class="form-label">Foto Negocio 2</label>
+                                                        <input type="file" class="form-control" name="FotoNegocio2" id="editFotoNegocio2" accept="image/*">
+                                                        <img id="previewFotoNegocio2" src="~/assets/img/foto2.jpg" class="img-thumbnail mt-2" style="width: 100%; height: 225px; object-fit: contain;">
+                                                    </div>
+                                                    <div class="col-md-3 mb-3">
+                                                        <label for="editFotoNegocio3" class="form-label">Foto Negocio 3</label>
+                                                        <input type="file" class="form-control" name="FotoNegocio3" id="editFotoNegocio3" accept="image/*">
+                                                        <img id="previewFotoNegocio3" src="~/assets/img/foto3.jpg" class="img-thumbnail mt-2" style="width: 100%; height: 225px; object-fit: contain;">
+                                                    </div>
+                                                    <div class="col-md-3 mb-3">
+                                                        <label for="editFotoNegocio4" class="form-label">Foto Negocio 4</label>
+                                                        <input type="file" class="form-control" name="FotoNegocio4" id="editFotoNegocio4" accept="image/*">
+                                                        <img id="previewFotoNegocio4" src="~/assets/img/foto4.jpg" class="img-thumbnail mt-2" style="width: 100%; height: 225px; object-fit: contain;">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para nuevo cliente -->
+<div class="modal fade" id="nuevoCliente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen" role="document">
+        <form id="formNuevoCliente" action="/Auxiliares/CrearCliente" method="post" class="w-100 h-100" enctype="multipart/form-data">
+            <div class="modal-content h-100">
+                <div class="modal-header bg-primario1 text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-plus me-2"></i>
+                        Nuevo Cliente
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-secundario overflow-auto overflow-x-hidden">
+                    <div class="container-fluid">
+                        <!-- Navegación por Pasos -->
+                        <ul class="nav nav-pills nav-fill mb-4" id="newClienteTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="new-datos-tab" data-bs-toggle="pill" data-bs-target="#new-datos" type="button" role="tab">
+                                    <i class="fas fa-user me-2"></i>Datos Personales
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="new-documentos-tab" data-bs-toggle="pill" data-bs-target="#new-documentos" type="button" role="tab">
+                                    <i class="fas fa-id-card me-2"></i>Documentos
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="new-ubicacion-tab" data-bs-toggle="pill" data-bs-target="#new-ubicacion" type="button" role="tab">
+                                    <i class="fas fa-map-marker-alt me-2"></i>Ubicación
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="new-negocio-tab" data-bs-toggle="pill" data-bs-target="#new-negocio" type="button" role="tab">
+                                    <i class="fas fa-store me-2"></i>Negocio
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Contenido de los Tabs -->
+                        <div class="tab-content" id="newClienteTabsContent">
+                            <!-- Tab 1: Datos Personales -->
+                            <div class="tab-pane fade show active" id="new-datos" role="tabpanel">
+                                <div class="row">
+                                    <!-- Información Básica -->
+                                    <div class="col-lg-6">
+                                        <div class="card shadow-sm mb-4">                                        
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-user-circle me-2"></i>Información Básica</h6>
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control form-control-sm" id="newNombre" name="Nombre" placeholder="Escribir nombres" required oninvalid="this.setCustomValidity('El campo Nombre es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="newNombre">Nombre</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control form-control-sm" id="newApellido" name="Apellido" placeholder="Escribe Apellidos" required oninvalid="this.setCustomValidity('El campo Apellido es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="newApellido">Apellido</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control dui" id="newDui" name="Dui" placeholder="00000000-0" maxlength="10" required pattern="^\d{8}-\d{1}$" oninvalid="this.setCustomValidity('El DUI debe tener el formato 00000000-0')" oninput="this.setCustomValidity('')">
+                                                            <label for="newDui">DUI</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control nit" id="newNit" name="Nit" placeholder="0000-000000-000-0" />
+                                                            <label for="newNit">NIT</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="date" class="form-control" id="newFechaNacimiento" name="FechaNacimiento" required oninvalid="this.setCustomValidity('Fecha Nacimiento es obligatoria')" oninput="this.setCustomValidity('')">
+                                                            <label for="newFechaNacimiento">Fecha de Nacimiento</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <select class="form-select" id="newGenero" name="Sexo">
+                                                                <option value="M">Masculino</option>
+                                                                <option value="F">Femenino</option>
+                                                                <option value="">Indefinido</option>
+                                                            </select>
+                                                            <label for="newGenero">Género</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-12">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control" id="newProfesion" name="Profesion" placeholder="Escribe..." required oninvalid="this.setCustomValidity('El campo Profesión y oficio es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="newProfesion">Profesión y Oficio</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <div class="form-check">
+                                                            <input type="checkbox" class="form-check-input" id="newTipoPer" name="TipoPer" value="1" checked="checked">
+                                                            <label class="form-check-label" for="newTipoPer">¿Persona Natural?</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-12">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="email" class="form-control" id="newEmail" name="Email" placeholder="Escribe..." required oninvalid="this.setCustomValidity('El correo debe ser obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="newEmail">Correo Electronico</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Contacto -->
+                                    <div class="col-lg-6">
+                                        <div class="card shadow-sm mb-4">
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-phone me-2"></i>Información de Contacto</h6>
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control telefono" id="newTelefono" name="Telefono" placeholder="0000-0000">
+                                                            <label for="newTelefono">Teléfono</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control telefono" id="newCelular" name="Celular" placeholder="0000-0000" required oninvalid="this.setCustomValidity('El celular es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="newCelular">Celular</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-12">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <select class="form-select" id="newGestor" name="Idgestor">
+                                                                <label for="newGestor">Gestor</label>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Referencias -->
+                                        <div class="card shadow-sm">
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-users me-2"></i>Referencias Personales</h6>
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control" id="newReferencia1" name="Referencia1" placeholder="Escribe Nombre Completo" required oninvalid="this.setCustomValidity('El nombre completo es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="newReferencia1">Referencia 1</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control telefono" id="newTelReferencia1" name="Telref1" placeholder="0000-0000" required oninvalid="this.setCustomValidity('el telefono es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="newTelReferencia1">Telefono Referencia 1</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control" id="newReferencia2" name="Referencia2" placeholder="Escribe Nombre Completo" required oninvalid="this.setCustomValidity('El campo Nombre es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="newReferencia2">Referencia 2</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control telefono" id="newTelReferencia2" name="Telref2" placeholder="0000-0000" required oninvalid="this.setCustomValidity('El campo Nombre es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="newTelReferencia2">Telefono Referencia 2</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab 2: Documentos -->
+                            <div class="tab-pane fade" id="new-documentos" role="tabpanel">
+                                <div class="row justify-content-center">
+                                    <div class="col-lg-10">
+                                        <div class="card shadow-sm">
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-file-image me-2"></i>Documentos de Identidad</h6>
+                                                <div class="row g-4">
+                                                    <div class="col-md-6">
+                                                        <div class="text-center">
+                                                            <label for="newDuiFrente" class="form-label">DUI Frente</label>
+                                                            <input type="file" name="DuiFrente" id="newDuiFrente" class="form-control mb-3" accept="image/*" required oninvalid="this.setCustomValidity('Debes subir una imagen del DUI (frente)')" oninput="this.setCustomValidity('')">
+                                                            <div class="border rounded-3 p-3 bg-light">
+                                                                <img id="newpreviewDuiFrente" src="~/assets/img/duiFrente.png" class="img-thumbnail mt-2" style="width: 100%; max-height: 225px; object-fit: contain;">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="text-center">
+                                                            <label for="newDuiDetras" class="form-label">DUI Detrás</label>
+                                                            <input type="file" name="DuiDetras" id="newDuiDetras" class="form-control mb-3" accept="image/*" required oninvalid="this.setCustomValidity('Debes subir una imagen del DUI (Atras)')" oninput="this.setCustomValidity('')">
+                                                            <div class="border rounded-3 p-3 bg-light">
+                                                                <img id="newpreviewDuiDetras" src="~/assets/img/duiDetras.png" class="img-thumbnail mt-2" style="width: 100%; max-height: 225px; object-fit: contain;">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab 3: Ubicación -->
+                            <div class="tab-pane fade" id="new-ubicacion" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="card shadow-sm h-100">
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-map-marker-alt me-2"></i>Dirección</h6>
+                                                <div class="row g-3">
+                                                    <div class="col-md-4 mb-3">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <select class="form-select" id="newDepartamento" name="Departamento">
+                                                            </select>
+                                                            <label for="newDepartamento">Departamento</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-8 mb-3">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <textarea class="form-control" id="newDireccion" name="Direccion" rows="2" placeholder="Colonia, Apartamento, Psj, block n° casa" required oninvalid="this.setCustomValidity('La dirección es obligatoria')" oninput="this.setCustomValidity('')"></textarea>
+                                                            <label for="newDireccion">Dirección</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-12 mb-3">
+                                                        <div class="form-floating form-floating-custom">
+                                                            <input type="text" class="form-control" id="newBuscadorDireccion" placeholder="Ingresa la dirección para buscar">
+                                                            <div id="newsuggestions-container" class="list-group" style="max-height: 200px; overflow-y: auto; position: absolute; z-index: 999; width: 100%; display: none;"></div>
+                                                            <label for="newBuscadorDireccion">Buscar Dirección</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+
+                                                            <input type="text" class="form-control" id="newLatitud" name="Latitud" readonly>
+                                                            <label for="newLatitud">Latitud</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-floating form-floating-custom">
+
+                                                            <input type="text" class="form-control" id="newLongitud" name="Longitud" readonly>
+                                                            <label for="newLongitud">Longitud</label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <div id="mensajeUbicando" class="alert alert-info mt-2" style="display: none;">
+                                                            📍 Obteniendo tu ubicación actual...
+                                                        </div>
+                                                        <button type="button" class="btn btn-primary mb-2" id="btnUbicacionActual">Usar mi ubicación actual</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="card shadow-sm h-100">
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-map me-2"></i>Ubicación</h6>
+                                                <div id="newMap" style="height: 300px; border: 1px solid #ccc;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab 4: Negocio -->
+                            <div class="tab-pane fade" id="new-negocio" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="card shadow-sm mb-4">
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-store me-2"></i>Información del Negocio</h6>
+                                                <div class="row g-3">
+                                                    <div class="col-md-6 mb-3">
+                                                        <div class="form-floating form-floating-custom">
+                                                        <input type="text" class="form-control" id="newGiro" name="Giro" placeholder="Ejemplo Tienda Comercial, Ropa, Tienda" required oninvalid="this.setCustomValidity('El Giro del negocio es obligatorio')" oninput="this.setCustomValidity('')">
+                                                            <label for="newGiro">Giro</label>
+                                                    </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card shadow-sm">
+                                            <div class="card-body">
+                                                <h6 class="mb-3"><i class="fas fa-camera me-2"></i>Fotos del Negocio</h6>
+                                                <div class="row g-4">
+                                                    <div class="col-md-3 mb-3">
+                                                        <label for="newFotoNegocio1" class="form-label">Foto Negocio 1</label>
+                                                        <input type="file" class="form-control" name="FotoNegocio1" id="newFotoNegocio1" accept="image/*" required oninvalid="this.setCustomValidity('Debe Subir imagen')" oninput="this.setCustomValidity('')">
+                                                        <img id="newpreviewFotoNegocio1" src="~/assets/img/agregar.jpg" class="img-thumbnail mt-2" style="width: 100%; height: 225px; object-fit: contain;">
+                                                    </div>
+                                                    <div class="col-md-3 mb-3">
+                                                        <label for="newFotoNegocio2" class="form-label">Foto Negocio 2</label>
+                                                        <input type="file" class="form-control" name="FotoNegocio2" id="newFotoNegocio2" accept="image/*" required oninvalid="this.setCustomValidity('Debe Subir imagen')" oninput="this.setCustomValidity('')">
+                                                        <img id="newpreviewFotoNegocio2" src="~/assets/img/agregar.jpg" class="img-thumbnail mt-2" style="width: 100%; height: 225px; object-fit: contain;">
+                                                    </div>
+                                                    <div class="col-md-3 mb-3">
+                                                        <label for="newFotoNegocio3" class="form-label">Foto Negocio 3</label>
+                                                        <input type="file" class="form-control" name="FotoNegocio3" id="newFotoNegocio3" accept="image/*" required oninvalid="this.setCustomValidity('Debe Subir imagen')" oninput="this.setCustomValidity('')">
+                                                        <img id="newpreviewFotoNegocio3" src="~/assets/img/agregar.jpg" class="img-thumbnail mt-2" style="width: 100%; height: 225px; object-fit: contain;">
+                                                    </div>
+                                                    <div class="col-md-3 mb-3">
+                                                        <label for="newFotoNegocio4" class="form-label">Foto Negocio 4</label>
+                                                        <input type="file" class="form-control" name="FotoNegocio4" id="newFotoNegocio4" accept="image/*" required oninvalid="this.setCustomValidity('Debe Subir imagen')" oninput="this.setCustomValidity('')">
+                                                        <img id="newpreviewFotoNegocio4" src="~/assets/img/agregar.jpg" class="img-thumbnail mt-2" style="width: 100%; height: 225px; object-fit: contain;">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<form id="formEliminarCliente" action="/Auxiliares/EliminarCliente" method="post">
+    <input type="hidden" name="id" id="inputIdEliminar">
+</form>
+<script src="~/js/clientes.js"></script>
+<script>
+    window.usuarioLogueado = {
+        idGestor: @(ViewContext.HttpContext.Session.GetInt32("GestorId")),
+        nombre: '@(ViewContext.HttpContext.Session.GetString("Usuario"))'
+    };
+</script>

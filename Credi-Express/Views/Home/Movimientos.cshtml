@@ -1,0 +1,711 @@
+﻿@using Credi_Express.Services
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    ViewData["Title"] = "Movimientos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var session = HttpContextAccessor.HttpContext?.Session;
+
+    var userId = session?.GetInt32("UsuarioId");
+    var usuario = session?.GetString("Usuario") ?? "";
+    var nombreCompleto = session?.GetString("NombreCompleto") ?? "";
+}
+<script>
+    // Variables globales para JavaScript - obtenidas desde el servidor
+    window.usuarioActual = {
+        id: @userId,
+        usuario: '@Html.Raw(usuario)',
+        nombreCompleto: '@Html.Raw(nombreCompleto)'
+    };
+</script>
+
+<style>
+    .dashboard-card {
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+        }
+
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+    }
+
+        .stat-card.success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .stat-card.warning {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #333;
+        }
+
+        .stat-card.danger {
+            background: linear-gradient(135deg, #ff8a80 0%, #ff5722 100%);
+        }
+
+    .main-action-btn {
+        border-radius: 15px;
+        padding: 20px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 18px;
+        min-height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .ingreso-row {
+        background-color: #d4edda !important;
+        border-left: 4px solid #28a745;
+    }
+
+    .egreso-row {
+        background-color: #f8d7da !important;
+        border-left: 4px solid #dc3545;
+    }
+
+    .monto-ingreso {
+        color: #28a745;
+        font-weight: bold;
+    }
+
+    .monto-egreso {
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    /* Estilos adicionales para mejorar la experiencia */
+    .prestamo-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+        .prestamo-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .prestamo-card.selected {
+            border-color: #198754 !important;
+            background-color: #f8fff8 !important;
+            box-shadow: 0 0 0 2px rgba(25, 135, 84, 0.25);
+        }
+
+
+    /* Mejorar legibilidad del total */
+    #montoTotal {
+        letter-spacing: 1px;
+    }
+
+    /* Animación del progress bar */
+    .progress-bar {
+        transition: width 0.6s ease;
+    }
+</style>
+
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1"><i class="fas fa-cash-register me-2 text-primary"></i>Pagos a la Vista</h2>
+                    <p class="text-muted mb-0">Gestión de desembolsos y cobros diarios</p>
+                </div>
+                <div>
+                    <span class="badge bg-primary fs-6">
+                        <i class="fas fa-calendar me-1"></i>
+                        <span id="fechaActual"></span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Cards -->
+    <div class="row mb-4">
+@*         <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card stat-card">
+                <div class="card-body text-center">
+                    <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
+                    <h3 class="mb-1" id="totalEfectivo">$0.00</h3>
+                    <p class="mb-0">Efectivo Disponible</p>
+                </div>
+            </div>
+        </div> *@
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card stat-card success">
+                <div class="card-body text-center">
+                    <i class="fas fa-arrow-up fa-2x mb-2"></i>
+                    <h3 class="mb-1" id="ingresosDia">$0.00</h3>
+                    <p class="mb-0">Ingresos del Día</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card stat-card warning">
+                <div class="card-body text-center">
+                    <i class="fas fa-arrow-down fa-2x mb-2"></i>
+                    <h3 class="mb-1" id="egresosDia">$0.00</h3>
+                    <p class="mb-0">Egresos del Día</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card stat-card danger">
+                <div class="card-body text-center">
+                    <i class="fas fa-hand-holding-usd fa-2x mb-2"></i>
+                    <h3 class="mb-1" id="totalMovimientos">0</h3>
+                    <p class="mb-0">Movimientos del Día</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="row mb-4">
+        <!-- Botones Principales -->
+        @if (User.TienePermiso("Home/Movimientos", "Create-Egreso"))
+        {
+            <div class="col-md-6 mb-3">
+                <button class="btn btn-success main-action-btn w-100" id="btnDesembolsos">
+                    <i class="fas fa-hand-holding-usd fa-2x"></i>
+                    <div>
+                        <div>Desembolsos</div>
+                        <small>Procesar préstamos aprobados</small>
+                    </div>
+                </button>
+            </div>
+        }
+        @if (User.TienePermiso("Home/Movimientos", "Create-Ingreso"))
+        {
+            <div class="col-md-6 mb-3">
+                <button class="btn btn-primary main-action-btn w-100" id="btnIngresarCobro">
+                    <i class="fas fa-receipt fa-2x"></i>
+                    <div>
+                        <div>Ingresar Cobro</div>
+                        <small>Registrar pagos de clientes</small>
+                    </div>
+                </button>
+            </div>
+        }
+    </div>
+    <!-- Tabla de Movimientos del Día -->
+    <div class="card dashboard-card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Movimientos del Día
+                <span class="badge bg-secondary ms-2" id="contadorMovimientos">0</span>
+            </h5>
+@*             <div>
+                <button class="btn btn-outline-success btn-sm me-2" id="btnActualizar">
+                    <i class="fas fa-refresh me-1"></i>Actualizar
+                </button>
+                <button class="btn btn-outline-primary btn-sm" id="btnExportar">
+                    <i class="fas fa-download me-1"></i>Exportar
+                </button>
+            </div> *@
+        </div>
+        <div class="card-body">
+            <!-- Filtros -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <select class="form-select" id="filtroTipo">
+                        <option value="">Todos los movimientos</option>
+                        <option value="INGRESO">Solo Ingresos</option>
+                        <option value="EGRESO">Solo Egresos</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control" id="filtroConcepto"
+                           placeholder="Buscar por concepto o cliente...">
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-outline-secondary w-100" id="btnFiltrar">
+                        <i class="fas fa-search me-1"></i>Filtrar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabla -->
+            <div class="table-responsive">
+                <table class="table table-hover" id="tablaMovimientos">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Hora</th>
+                            <th>Tipo</th>
+                            <th>Concepto</th>
+                            <th>Cliente/Detalles</th>
+                            <th class="text-center">Ingresos</th>
+                            <th class="text-center">Egresos</th>
+                            <th>Usuario</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Los datos se cargarán dinámicamente -->
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <th colspan="4" class="text-end">TOTALES:</th>
+                            <th class="text-center monto-ingreso" id="totalIngresos">$0.00</th>
+                            <th class="text-center monto-egreso" id="totalEgresos">$0.00</th>
+                            <th colspan="2"></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Desembolsos - Versión Mejorada -->
+<div class="modal fade" id="modalDesembolso" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-hand-holding-usd me-2"></i>Procesar Desembolso
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Búsqueda de solicitud -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Número de Solicitud Aprobada</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-hashtag"></i></span>
+                        <input type="text" class="form-control form-control-lg" id="numeroSolicitud"
+                               placeholder="Ej: 12345" autocomplete="off">
+                        <button class="btn btn-primary" type="button" id="btnBuscarSolicitud">
+                            <i class="fas fa-search me-1"></i>Buscar
+                        </button>
+                    </div>
+                    <small class="text-muted">Solo se pueden desembolsar solicitudes con estado "APROBADO"</small>
+                </div>
+
+                <!-- Resultado de búsqueda -->
+                <div id="datosSolicitud" style="display: none;">
+                    <div class="alert alert-info border-0">
+                        <h6 class="mb-3">
+                            <i class="fas fa-info-circle me-2"></i>Datos de la Solicitud Aprobada
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-2">
+                                    <strong><i class="fas fa-user me-1 text-primary"></i>Cliente:</strong>
+                                    <span id="nombreCliente" class="ms-1"></span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong><i class="fas fa-id-card me-1 text-primary"></i>DUI:</strong>
+                                    <span id="duiCliente" class="ms-1"></span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong><i class="fas fa-phone me-1 text-primary"></i>Teléfono:</strong>
+                                    <span id="telefonoCliente" class="ms-1"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-2">
+                                    <strong><i class="fas fa-dollar-sign me-1 text-success"></i>Monto:</strong>
+                                    <span class="text-success fw-bold">$<span id="montoSolicitud"></span></span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong><i class="fas fa-calendar me-1 text-info"></i>Cuotas:</strong>
+                                    <span id="numeroCuotas" class="ms-1"></span>
+                                </div>
+                                <div class="mb-2">
+                                    <strong><i class="fas fa-check-circle me-1 text-success"></i>Estado:</strong>
+                                    <span id="estadoSolicitud" class="ms-1"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="fas fa-sticky-note me-1"></i>Observaciones del Desembolso
+                        </label>
+                        <select class="form-select form-select-lg" id="observacionesDesembolso" required>
+                            <option value="">Seleccione método</option>
+                            <option value="EFECTIVO">💵 Efectivo</option>
+                            <option value="TRANSFERENCIA">🏦 Transferencia Bancaria</option>
+                            <option value="CHEQUE">📄 Cheque</option>
+                            <option value="DEPOSITO">💳 Depósito Bancario</option>
+                        </select>
+@*                         <textarea class="form-control" id="observacionesDesembolso" rows="3"
+                                  placeholder="Detalles del desembolso (opcional)..."></textarea>
+                        <small class="text-muted">
+                            Ej: Entregado en efectivo, transferencia bancaria, etc.
+                        </small> *@
+                    </div>
+                </div>
+
+                <!-- Mensaje de error -->
+                <div id="mensajeError" class="alert alert-danger" style="display: none;">
+                    <div class="row align-items-center">
+                        <div class="col-2 text-center">
+                            <i class="fas fa-exclamation-triangle fa-2x text-danger"></i>
+                        </div>
+                        <div class="col-10">
+                            <h6 class="mb-1">Error en la búsqueda</h6>
+                            <span id="textoError"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-success" id="btnConfirmarDesembolso" style="display: none;">
+                    <i class="fas fa-hand-holding-usd me-1"></i>Confirmar Desembolso
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Ingresar Cobro - Fullscreen Optimizado -->
+<div class="modal fade" id="modalCobro" tabindex="-1">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <!-- Header -->
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-receipt me-2"></i>Registrar Cobro
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body overflow-auto">
+                <!-- PASO 1: Búsqueda de Cliente -->
+                <div id="seccionBusqueda">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Paso 1:</strong> Busque el cliente por su DUI
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-lg-8 col-12">
+                            <label for="dui" class="form-label fw-bold fs-5">
+                                <i class="fas fa-id-card me-2"></i>DUI del Cliente
+                            </label>
+                            <input type="text" class="form-control form-control-lg dui" id="dui"
+                                   placeholder="00000000-0" maxlength="10" required>
+                            <div class="form-text">Formato: 12345678-9</div>
+                        </div>
+                        <div class="col-lg-4 col-12 d-flex align-items-end">
+                            <button type="button" class="btn btn-primary btn-lg w-100" onclick="getCliente()">
+                                <i class="fas fa-search me-2"></i>Buscar Cliente
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PASO 2: Datos del Cliente -->
+                <div id="seccionCliente" style="display: none;">
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Cliente encontrado:</strong> Seleccione el préstamo para realizar el cobro
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <!-- Información del Cliente -->
+                            <div class="card border-success mb-4">
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+                                                <strong><i class="fas fa-user me-1"></i>Nombre:</strong>
+                                                <span id="clienteNombre" class="text-end fw-semibold">-</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center p-2">
+                                                <strong><i class="fas fa-id-card me-1"></i>DUI:</strong>
+                                                <span id="clienteDui" class="text-end fw-semibold">-</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+                                                <strong><i class="fas fa-file-invoice me-1"></i>NIT:</strong>
+                                                <span id="clienteNit" class="text-end fw-semibold">-</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center p-2">
+                                                <strong><i class="fas fa-phone me-1"></i>Teléfono:</strong>
+                                                <span id="clienteTelefono" class="text-end fw-semibold">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="txtIdCliente" name="IdCliente">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <!-- Lista de Préstamos -->
+                            <div class="card border-info mb-4">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-hand-holding-usd me-2"></i>Préstamos Activos
+                                        <span class="badge bg-light text-dark ms-2" id="cantidadPrestamos">0</span>
+                                    </h6>
+                                </div>
+                                <div class="card-body" style="max-height: 50vh; overflow-y: auto;">
+                                    <div id="listaPrestamos">
+                                        <!-- Se llenarán dinámicamente -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>                   
+                </div>
+
+                <!-- PASO 3: Formulario de Cobro -->
+                <div id="seccionFormularioCobro" style="display: none;">
+                    <div class="alert alert-primary">
+                        <i class="fas fa-credit-card me-2"></i>
+                        <strong>Paso 3:</strong> Complete los detalles del cobro
+                    </div>
+
+                    <div class="row">
+                        <div class="col-xl-12 col-lg-12 col-12">
+                            <!-- Información del Préstamo Seleccionado -->
+                            <div class="card border-primary mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-info-circle me-2"></i>Préstamo Seleccionado
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-xl-4 col-lg-6 col-12">
+                                            <div class="text-center p-3 bg-light rounded-3">
+                                                <small class="text-muted d-block mb-1">Préstamo #</small>
+                                                <strong id="prestamoIdSeleccionado" class="fs-4 text-primary">-</strong>
+                                            </div>
+                                        </div>
+                                        <div class="col-xl-4 col-lg-6 col-12">
+                                            <div class="text-center p-3 bg-light rounded-3">
+                                                <small class="text-muted d-block mb-1">Cuota Mensual</small>
+                                                <strong class="text-success fs-4" id="prestamoCuotaMensual">-</strong>
+                                            </div>
+                                        </div>
+                                        <div class="col-xl-4 col-lg-6 col-12">
+                                            <div class="text-center p-3 bg-light rounded-3">
+                                                <small class="text-muted d-block mb-1">Próxima Cuota</small>
+                                                <strong class="text-info fs-4" id="prestamoProximaCuota">-</strong>
+                                            </div>
+                                        </div>
+                                        <!-- ===== AGREGAR DESPUÉS DE "Próxima Cuota" EN EL MODAL ===== -->
+                                        @*    <div class="col-xl-3 col-lg-6 col-12">
+                                    <div class="text-center p-3 bg-light rounded-3">
+                                        <small class="text-muted d-block mb-1">Fecha Vencimiento</small>
+                                        <strong class="text-danger fs-6" id="prestamoFechaVencimiento">-</strong>
+                                    </div>
+                                </div>
+ *@
+                                        <!-- ===== AGREGAR NUEVA SECCIÓN DESPUÉS DEL FORMULARIO DE COBRO ===== -->
+                                        <!-- Cronograma de Pagos -->
+                                        <div class="card border-warning mb-4" id="seccionCronograma" style="display: none;">
+                                            <div class="card-header bg-warning text-dark">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <h6 class="mb-0">
+                                                        <i class="fas fa-calendar-alt me-2"></i>Cronograma de Pagos
+                                                    </h6>
+                                                    <button type="button" class="btn btn-sm btn-outline-dark" onclick="toggleCronograma()">
+                                                        <i class="fas fa-eye me-1"></i>Ver/Ocultar
+                                                    </button>
+                                                    <small class="text-muted ms-2">Haga clic en "Pagar" para seleccionar una cuota específica</small>
+                                                </div>
+                                            </div>
+                                            <div class="card-body" id="cronogramaBody" style="max-height: 300px; overflow-y: auto; display: none;">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-hover">
+                                                        <thead class="table-dark">
+                                                            <tr>
+                                                                <th class="text-start">Cuota #</th>
+                                                                <th class="text-start">Fecha Programada</th>
+                                                                <th class="text-start">Cuota</th>
+                                                                <th class="text-start">Pagado</th>
+                                                                <th class="text-start">Estado</th>
+                                                                <th class="text-start">Fecha Real Pago</th>
+                                                                <th class="text-start">Acción</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="tablaCronograma">
+                                                            <!-- Se llenará dinámicamente -->
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="prestamoSeleccionadoId">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-12 col-lg-12 col-12">
+                            <!-- Formulario de Cobro -->
+                            <div class="card border-primary mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-info-circle me-2"></i>Registro de Cobro
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+
+                                        <form id="formCobro">
+                                            <div class="row g-4">
+                                                <!-- Concepto -->
+                                                <div class="col-lg-6 col-12">
+                                                    <label class="form-label fw-bold fs-5">
+                                                        <i class="fas fa-list me-2"></i>Concepto del Cobro
+                                                    </label>
+                                                    <select class="form-select form-select-lg" id="conceptoCobro" required onchange="ajustarCamposCobro()">
+                                                        <option value="">Seleccione el concepto</option>
+                                                        <option value="CUOTA_COMPLETA">💰 Pago de Cuota Completa</option>
+                                                        <option value="SOLO_CAPITAL">📊 Solo Capital</option>
+                                                        <option value="SOLO_INTERES">📈 Solo Interés</option>
+                                                        <option value="ABONO_PARCIAL">💵 Abono Parcial</option>
+                                                       
+                                                        @*  <option value="PAGO_ADELANTADO">⚡ Pago Adelantado</option>
+                                     *@
+                                                    </select>
+                                                </div>
+                                                <div class="col-lg-6 col-12">
+                                                    <label class="form-label fw-bold fs-5">
+                                                        <i class="fas fa-credit-card me-2"></i>Método de Pago
+                                                    </label>
+                                                    <select class="form-select form-select-lg" id="metodoPago" required>
+                                                        <option value="">Seleccione método</option>
+                                                        <option value="EFECTIVO">💵 Efectivo</option>
+                                                        <option value="TRANSFERENCIA">🏦 Transferencia Bancaria</option>
+                                                        <option value="CHEQUE">📄 Cheque</option>
+                                                        <option value="DEPOSITO">💳 Depósito Bancario</option>
+                                                    </select>
+                                                </div>
+
+
+                                                <!-- Desglose de Montos -->
+                                                <div class="col-lg-3 col-md-6 col-12">
+                                                    <label class="form-label fw-bold fs-6">
+                                                        <i class="fas fa-dollar-sign me-2"></i>Capital
+                                                    </label>
+                                                    <div class="input-group input-group-lg">
+                                                        <span class="input-group-text bg-primary text-white">$</span>
+                                                        <input type="text" class="form-control money" id="montoCapital" placeholder="0.00">
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-3 col-md-6 col-12">
+                                                    <label class="form-label fw-bold fs-6">
+                                                        <i class="fas fa-percentage me-2"></i>Interés
+                                                    </label>
+                                                    <div class="input-group input-group-lg">
+                                                        <span class="input-group-text bg-info text-white">$</span>
+                                                        <input type="text" class="form-control money" id="montoInteres" placeholder="0.00">
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-3 col-md-6 col-12">
+                                                    <label class="form-label fw-bold fs-6">
+                                                        <i class="fas fa-percentage me-2"></i>Domicilio
+                                                    </label>
+                                                    <div class="input-group input-group-lg">
+                                                        <span class="input-group-text bg-info text-white">$</span>
+                                                        <input type="text" class="form-control money" id="montoDomicilio" placeholder="0.00">
+                                                    </div>
+                                                </div>
+                                                <div class="col-lg-3 col-md-6 col-12">
+                                                    <label class="form-label fw-bold fs-6">
+                                                        <i class="fas fa-exclamation-triangle me-2"></i>Mora
+                                                    </label>
+                                                    <div class="input-group input-group-lg">
+                                                        <span class="input-group-text bg-warning text-dark">$</span>
+                                                        <input type="text" class="form-control money" id="montoMora" placeholder="0.00">
+                                                    </div>
+                                                </div>
+
+                                                <!-- Total y Método de Pago -->
+                                                <div class="col-lg-6 col-12">
+                                                    <label class="form-label fw-bold fs-5">
+                                                        <i class="fas fa-calculator me-2"></i>Total a Cobrar
+                                                    </label>
+                                                    <div class="input-group input-group-lg">
+                                                        <span class="input-group-text bg-success text-white fs-4">$</span>
+                                                        <input type="number" class="form-control bg-light fw-bold fs-3 text-center" id="montoTotal"
+                                                               step="0.01" readonly style="font-family: monospace;">
+                                                    </div>
+                                                    <div class="form-text">Se calcula automáticamente</div>
+                                                </div>
+                                                <!-- Número de Cuota -->
+                                                <div class="col-lg-6 col-12">
+                                                    <label class="form-label fw-bold fs-6">
+                                                        <i class="fas fa-calendar me-2"></i>Número de Cuota o Pago
+                                                    </label>
+                                                    <input type="number" class="form-control form-control-lg" id="numeroCuota"
+                                                           min="1" placeholder="1" required readonly>
+                                                    <div class="form-text">Número de la cuota que se está pagando</div>
+                                                </div>
+
+                                                <!-- Campos ocultos para cuota seleccionada -->
+                                                <input type="hidden" id="cuotaSeleccionada" name="numeroCuotaSeleccionada">
+                                                <input type="hidden" id="fechaCuotaSeleccionada" name="fechaCuota">
+                                                <!-- Observaciones -->
+                                                <div class="col-12">
+                                                    <label class="form-label fw-bold fs-6">
+                                                        <i class="fas fa-comment me-2"></i>Observaciones
+                                                    </label>
+                                                    <textarea class="form-control form-control-lg" id="observacionesCobro" rows="3"
+                                                              placeholder="Detalles adicionales del cobro (opcional)"></textarea>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                   
+                </div>
+
+                <!-- Mensaje de Error -->
+                <div id="mensajeError" class="alert alert-danger" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="textoError"></span>
+                </div>
+            </div>
+
+            <!-- Footer Sticky -->
+            <div class="modal-footer border-top bg-light">
+                <div class="d-flex flex-wrap gap-2 w-100">
+                    <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </button>
+
+                    <button type="button" class="btn btn-outline-primary btn-lg" id="btnNuevaBusqueda"
+                            style="display: none;" onclick="nuevaBusqueda()">
+                        <i class="fas fa-search me-2"></i>Buscar Otro
+                    </button>
+
+                    <button type="button" class="btn btn-success btn-lg flex-fill" id="btnGuardarCobro"
+                            style="display: none;" onclick="guardarCobro()">
+                        <i class="fas fa-save me-2"></i>Registrar Cobro
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/js/movimientos.js"></script>

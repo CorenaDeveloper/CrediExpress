@@ -1,0 +1,546 @@
+﻿@{
+    ViewData["Title"] = "Gestión de Permisos";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    #tblPuestos tbody td,
+    #tblPuestos thead th {
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+    }
+
+    .puesto-selected {
+        background-color: #e3f2fd !important;
+        border-left: 4px solid #2196f3;
+    }
+
+    .modulo-header {
+        background-color: #f8f9fa;
+        border-left: 4px solid #6c757d;
+        font-weight: 600;
+    }
+
+    .permiso-item {
+        transition: all 0.2s ease;
+    }
+
+        .permiso-item:hover {
+            background-color: #f8f9fa;
+        }
+
+    .permiso-check {
+        transform: scale(1.2);
+    }
+
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255,255,255,0.8);
+        z-index: 9999;
+        display: none;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .btn-xs {
+        padding: 0.125rem 0.25rem;
+        font-size: 0.75rem;
+        line-height: 1;
+        border-radius: 0.2rem;
+    }
+
+   
+    #mensajeInicial.hidden {
+        display: none !important;
+    }
+
+    #contenedorPermisos.visible {
+        display: block !important;
+    }
+
+    .hidden {
+        display: none !important;
+    }
+
+    .visible {
+        display: block !important;
+    }
+
+    .flex-visible {
+        display: flex !important;
+    }
+</style>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <h4 class="card-title">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Gestión de Permisos por Puesto
+                    </h4>
+                    <div class="ms-auto">
+                        <button type="button" class="btn btn-success btn-sm" id="btnGuardarCambios" style="display: none;">
+                            <i class="fas fa-save me-1"></i>Guardar Cambios
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="btnRecargar">
+                            <i class="fas fa-refresh me-1"></i>Recargar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Lista de Puestos -->
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-users me-2"></i>Puestos de Trabajo
+                                </h6>
+                            </div>
+                            <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
+                                <div class="table-responsive">
+                                    <table id="tblPuestos" class="table table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Puesto</th>
+                                                <th class="text-center">Permisos</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Se llenará dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Panel de Permisos -->
+                    <div class="col-md-8">
+                        <div class="card h-100">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-key me-2"></i>
+                                    Permisos Disponibles
+                                    <span class="badge bg-light text-dark ms-2" id="puestoSeleccionado">Seleccione un puesto</span>
+                                </h6>
+                            </div>
+                            <div class="card-body p-0" style="position: relative;">
+                                <!-- Loading Overlay -->
+                                <div class="loading-overlay" id="loadingPermisos">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Cargando...</span>
+                                    </div>
+                                </div>
+
+                                <!-- Mensaje inicial -->
+                                <div id="mensajeInicial" class="d-flex align-items-center justify-content-center" style="height: 500px;">
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-hand-pointer fa-3x mb-3"></i>
+                                        <h5>Seleccione un puesto para gestionar sus permisos</h5>
+                                        <p>Haga clic en cualquier puesto de la lista para comenzar</p>
+                                    </div>
+                                </div>
+
+                                <!-- Contenedor de permisos -->
+                                <div id="contenedorPermisos" style="display: none; max-height: 580px; overflow-y: auto;">
+                                    <div class="p-3">
+                                        <!-- Controles rápidos -->
+                                        <div class="mb-3 pb-3 border-bottom">
+                                            <div class="d-flex gap-2 flex-wrap">
+                                                <button type="button" class="btn btn-outline-success btn-sm" onclick="seleccionarTodos(true)">
+                                                    <i class="fas fa-check-square me-1"></i>Seleccionar Todos
+                                                </button>
+                                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="seleccionarTodos(false)">
+                                                    <i class="fas fa-square me-1"></i>Deseleccionar Todos
+                                                </button>
+                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="seleccionarSoloLectura()">
+                                                    <i class="fas fa-eye me-1"></i>Solo Lectura
+                                                </button>
+                                                <button type="button" class="btn btn-outline-warning btn-sm" onclick="seleccionarCompleto()">
+                                                    <i class="fas fa-crown me-1"></i>Acceso Completo
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Lista de permisos agrupados -->
+                                        <div id="listaPermisos">
+                                            <!-- Se llenará dinámicamente -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Inputs ocultos para el formulario -->
+<form id="formPermisos" style="display: none;">
+    <input type="hidden" id="puestoIdActual" name="puestoId" />
+    <input type="hidden" id="permisosData" name="permisos" />
+</form>
+
+<script>
+    // Variables globales
+    let puestoActual = null;
+    let permisosOriginales = {};
+    let cambiosPendientes = false;
+    let todosLosPermisos = [];
+
+    // Inicializar página
+    $(document).ready(function() {
+        cargarPuestos();
+
+        // Event listeners
+        $('#btnRecargar').click(function() {
+            cargarPuestos();
+            resetearVistaPermisos();
+        });
+
+        $('#btnGuardarCambios').click(function() {
+            guardarCambios();
+        });
+    });
+
+    // Cargar lista de puestos
+    function cargarPuestos() {
+        $.get('/Auxiliares/GetPuestos', function(data) {
+            const tbody = $('#tblPuestos tbody');
+            tbody.empty();
+
+            data.forEach(puesto => {
+                const row = `
+                    <tr class="puesto-row" data-puesto-id="${puesto.id}" onclick="seleccionarPuesto(${puesto.id}, '${puesto.nombre}')">
+                        <td>
+                            <div class="fw-semibold">${puesto.nombre}</div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge bg-secondary" id="count-${puesto.id}">-</span>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+
+            // Cargar conteos de permisos
+            cargarConteoPermisos();
+        }).fail(function() {
+            mostrarError('Error al cargar los puestos');
+        });
+    }
+
+    // Cargar conteo de permisos por puesto
+    function cargarConteoPermisos() {
+        $.get('/Auxiliares/GetConteoPermisosPorPuesto', function(data) {
+            // Reiniciar todos los contadores
+            $('.badge[id^="count-"]').text('0');
+
+            data.forEach(item => {
+                $(`#count-${item.puestoId}`).text(item.cantidad);
+            });
+        });
+    }
+
+    // Seleccionar puesto
+    function seleccionarPuesto(puestoId, nombrePuesto) {
+        // Verificar cambios pendientes
+       if (cambiosPendientes) {
+        Swal.fire({
+            title: '¿Continuar sin guardar?',
+            text: 'Hay cambios sin guardar. ¿Desea continuar?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, continuar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                ejecutarSeleccionPuesto(puestoId, nombrePuesto);
+            }
+        });
+    } else {
+        ejecutarSeleccionPuesto(puestoId, nombrePuesto);
+    }
+
+        // Actualizar UI
+        $('.puesto-row').removeClass('puesto-selected');
+        $(`.puesto-row[data-puesto-id="${puestoId}"]`).addClass('puesto-selected');
+
+        $('#puestoSeleccionado').text(nombrePuesto);
+        $('#puestoIdActual').val(puestoId);
+
+        // Cargar permisos
+        cargarPermisosDelPuesto(puestoId);
+
+        puestoActual = puestoId;
+        cambiosPendientes = false;
+        actualizarBotonGuardar();
+    }
+
+        function ejecutarSeleccionPuesto(puestoId, nombrePuesto) {
+        // Actualizar UI
+        $('.puesto-row').removeClass('puesto-selected');
+        $(`.puesto-row[data-puesto-id="${puestoId}"]`).addClass('puesto-selected');
+
+        $('#puestoSeleccionado').text(nombrePuesto);
+        $('#puestoIdActual').val(puestoId);
+
+        // Cargar permisos
+        cargarPermisosDelPuesto(puestoId);
+
+        puestoActual = puestoId;
+        cambiosPendientes = false;
+        actualizarBotonGuardar();
+    }
+
+    // Función para resetear la vista de permisos
+     function resetearVistaPermisos() {
+        //console.log('Reseteando vista de permisos');
+        $('#mensajeInicial').removeClass('hidden');
+        $('#contenedorPermisos').removeClass('visible').hide();
+        $('#loadingPermisos').hide();
+        $('#puestoSeleccionado').text('Seleccione un puesto');
+        $('.puesto-row').removeClass('puesto-selected');
+        puestoActual = null;
+        cambiosPendientes = false;
+        actualizarBotonGuardar();
+    }
+
+    // Cargar permisos del puesto seleccionado
+        function cargarPermisosDelPuesto(puestoId) {
+        //console.log('Iniciando carga de permisos para puesto:', puestoId);
+
+        // Usar clases CSS para controlar visibilidad
+        $('#mensajeInicial').addClass('hidden');
+        $('#contenedorPermisos').removeClass('visible').hide();
+        $('#loadingPermisos').show();
+
+        // Cargar todos los permisos y los asignados al puesto
+        Promise.all([
+            $.get('/Auxiliares/GetPermisos'),
+            $.get(`/Auxiliares/GetPermisosPorPuesto?puestoId=${puestoId}`)
+        ]).then(([todosPermisos, permisosAsignados]) => {
+            //console.log('Permisos cargados exitosamente');
+
+            todosLosPermisos = todosPermisos;
+            mostrarPermisos(todosPermisos, permisosAsignados);
+
+            // Guardar estado original
+            permisosOriginales = {};
+            permisosAsignados.forEach(p => {
+                permisosOriginales[p.permisoId] = p.activo === 1;
+            });
+
+            // Mostrar contenedor de permisos y ocultar loading
+            $('#loadingPermisos').hide();
+            $('#contenedorPermisos').addClass('visible').show();
+
+        }).catch((error) => {
+            //console.error('Error al cargar permisos:', error);
+            $('#loadingPermisos').hide();
+            $('#mensajeInicial').removeClass('hidden');
+            Swal.fire('Error', 'Error al cargar los permisos', 'error');
+        });
+    }
+
+
+    // Mostrar permisos agrupados por módulo
+    function mostrarPermisos(todosPermisos, permisosAsignados) {
+        const contenedor = $('#listaPermisos');
+        contenedor.empty();
+
+        // Agrupar por módulo
+        const porModulo = {};
+        todosPermisos.forEach(permiso => {
+            if (!porModulo[permiso.modulo]) {
+                porModulo[permiso.modulo] = [];
+            }
+            porModulo[permiso.modulo].push(permiso);
+        });
+        // Crear checkboxes por módulo
+        Object.keys(porModulo).forEach(modulo => {
+            const moduloHtml = `
+                <div class="mb-4">
+                    <div class="modulo-header p-2 rounded-top">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-folder me-2"></i>${modulo}</span>
+                            <div>
+                                <button type="button" class="btn btn-xs btn-outline-success" onclick="seleccionarModulo('${modulo}', true)">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button type="button" class="btn btn-xs btn-outline-danger ms-1" onclick="seleccionarModulo('${modulo}', false)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border border-top-0 rounded-bottom p-2">
+                        ${porModulo[modulo].map(permiso => crearCheckboxPermiso(permiso, permisosAsignados)).join('')}
+                    </div>
+                </div>
+            `;
+            contenedor.append(moduloHtml);
+        });
+    }
+
+    // Crear checkbox individual para permiso
+    function crearCheckboxPermiso(permiso, permisosAsignados) {
+
+
+      const asignado = permisosAsignados.find(p => {
+        return parseInt(p.permisoId) === parseInt(permiso.id);
+       });
+
+
+        const checked = asignado && asignado.activo === 1 ? 'checked' : '';
+
+        const iconos = {
+            'Create': 'fas fa-plus text-success',
+            'Read': 'fas fa-eye text-info',
+            'Update': 'fas fa-edit text-warning',
+            'Delete': 'fas fa-trash text-danger'
+        };
+
+        const icono = iconos[permiso.permiso1] || 'fas fa-key';
+
+        return `
+            <div class="permiso-item d-flex justify-content-between align-items-center p-2 border-bottom">
+                <div class="d-flex align-items-center">
+                    <i class="${icono} me-2"></i>
+                    <span>${permiso.permiso1}</span>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input permiso-check"
+                           type="checkbox"
+                           id="permiso_${permiso.id}"
+                           data-permiso-id="${permiso.id}"
+                           data-modulo="${permiso.modulo}"
+                           data-tipo="${permiso.permiso1}"
+                           ${checked}
+                           onchange="marcarCambio()">
+                </div>
+            </div>
+        `;
+    }
+
+    // Funciones de selección masiva
+    function seleccionarTodos(estado) {
+        $('.permiso-check').prop('checked', estado);
+        marcarCambio();
+    }
+
+    function seleccionarSoloLectura() {
+        $('.permiso-check').prop('checked', false);
+        $('input[data-tipo="Read"]').prop('checked', true);
+        marcarCambio();
+    }
+
+    function seleccionarCompleto() {
+        seleccionarTodos(true);
+    }
+
+    function seleccionarModulo(modulo, estado) {
+        $(`.permiso-check[data-modulo="${modulo}"]`).prop('checked', estado);
+        marcarCambio();
+    }
+
+    // Marcar que hay cambios pendientes
+    function marcarCambio() {
+        cambiosPendientes = true;
+        actualizarBotonGuardar();
+    }
+
+    // Actualizar visibilidad del botón guardar
+    function actualizarBotonGuardar() {
+        if (cambiosPendientes) {
+            $('#btnGuardarCambios').show();
+        } else {
+            $('#btnGuardarCambios').hide();
+        }
+    }
+
+    // Guardar cambios
+    function guardarCambios() {
+        if (!puestoActual) {
+            mostrarError('No hay un puesto seleccionado');
+            return;
+        }
+
+        const permisos = [];
+        $('.permiso-check').each(function() {
+            permisos.push({
+                permisoId: parseInt($(this).data('permiso-id')),
+                activo: $(this).is(':checked') ? 1 : 0
+            });
+        });
+
+        const data = {
+            puestoId: puestoActual,
+            permisos: permisos
+        };
+
+        // Mostrar loading
+        const btnGuardar = $('#btnGuardarCambios');
+        const textoOriginal = btnGuardar.html();
+        btnGuardar.html('<i class="fas fa-spinner fa-spin me-1"></i>Guardando...').prop('disabled', true);
+
+        $.ajax({
+            url: '/Auxiliares/ActualizarPermisosPuesto',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response) {
+                if (response.success) {
+                    mostrarExito('Permisos actualizados correctamente');
+                    cambiosPendientes = false;
+                    actualizarBotonGuardar();
+                    cargarConteoPermisos();
+
+                    // Actualizar estado original
+                    permisosOriginales = {};
+                    permisos.forEach(p => {
+                        permisosOriginales[p.permisoId] = p.activo === 1;
+                    });
+                } else {
+                    mostrarError(response.message || 'Error al actualizar permisos');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', error);
+                mostrarError('Error de conexión al guardar');
+            },
+            complete: function() {
+                btnGuardar.html(textoOriginal).prop('disabled', false);
+            }
+        });
+    }
+
+        // Funciones de utilidad para mostrar mensajes
+    function mostrarExito(mensaje) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Éxito',
+            text: mensaje,
+            timer: 3000,
+            showConfirmButton: false
+        });
+    }
+
+    function mostrarError(mensaje) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: mensaje
+        });
+    }
+</script>

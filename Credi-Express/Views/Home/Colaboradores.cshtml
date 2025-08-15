@@ -1,0 +1,342 @@
+﻿@model List<Credi_Express.ModelVM.GestosVM>
+@{
+    ViewData["Title"] = "Colaboradores";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    .tamano1 {
+        font-size: 10px !important;
+    }
+
+    #tblColaboradores tbody td,
+    #tblColaboradores thead th,
+    #tblColaboradores tfoot th {
+        padding: 4px 8px !important;
+        font-size: 13px !important;
+    }
+</style>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    <h4 class="card-title">Lista de Colaboradores</h4>
+                    <!-- El JavaScript controlará la visibilidad de este botón -->
+                    <button type="button" class="btn btn-secondary ms-auto" data-bs-toggle="modal"
+                            data-bs-target="#nuevouser" id="btnNuevoColaborador">
+                        Nuevo Colaborador
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div style="position:relative;">
+                    <div id="loading-overlay" style=" display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.7); z-index: 9999; display: flex; justify-content: center; align-items: flex-start; padding-top: 30px; ">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table id="tblColaboradores" class="display table table-striped table-hover compact nowrap">
+                            <thead>
+                                <tr>
+                                    <th>Nombres</th>
+                                    <th>Apellidos</th>
+                                    <th>Teléfono</th>
+                                    <th>Departamento</th>
+                                    <th>Puesto</th>
+                                    <th>Usuario</th>
+                                    <th>Opción</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach (var user in Model)
+                                {
+                                    <tr>
+                                        <td>@user.Nombre</td>
+                                        <td>@user.Apellido</td>
+                                        <td>@user.Telefono</td>
+                                        <td>@user.DepartamentoNombre</td>
+                                        <td>@user.PuestoNombre</td>
+                                        <td>@user.Usuario</td>
+                                        <td class="text-center">
+                                            <a href="#"
+                                               class="btn btn-sm btn-primary btn-round btn-ver-colaborador"
+                                               title="Ver"
+                                               data-bs-toggle="modal"
+                                               data-bs-target="#veruserModal"
+                                               data-nombre="@user.Nombre"
+                                               data-apellido="@user.Apellido"
+                                               data-telefono="@user.Telefono"
+                                               data-direccion="@user.Direccion"
+                                               data-departamento="@user.Departamento"
+                                               data-nombredepartamento="@user.DepartamentoNombre"
+                                               data-activo="@user.Activo"
+                                               data-idpuesto="@user.Idpuesto"
+                                               data-nombrepuesto="@user.PuestoNombre">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+
+                                            <a href="#"
+                                               class="btn btn-sm btn-success btn-round btn-editar-colaborador"
+                                               title="Editar"
+                                               data-bs-toggle="modal"
+                                               data-bs-target="#editUserModel"
+                                               data-nombre="@user.Nombre"
+                                               data-apellido="@user.Apellido"
+                                               data-telefono="@user.Telefono"
+                                               data-direccion="@user.Direccion"
+                                               data-departamento="@user.Departamento"
+                                               data-activo="@user.Activo"
+                                               data-idpuesto="@user.Idpuesto"
+                                               data-id="@user.Id">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+
+                                            <a href="#" class="btn btn-sm btn-warning btn-round btn-usuario-colaborador"
+                                               title="Usuario"
+                                               data-bs-toggle="modal"
+                                               data-bs-target="#UserColaborador"
+                                               data-id="@user.Id"
+                                               data-username="@user.Usuario">
+                                                <i class="fas fa-user"></i>
+                                            </a>
+
+                                            <a href="#" class="btn btn-sm btn-danger btn-round btnEliminaruser"
+                                               title="Eliminar"
+                                               data-id="@user.Id">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para nuevo Colaborador -->
+<div class="modal fade" id="nuevouser" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen" role="document">
+        <form id="formNuevoColaborador" action="/Auxiliares/CrearColaborador" method="post" class="w-100 h-100">
+            <div class="modal-content h-100">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nuevo Colaborador</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-secundario overflow-auto overflow-x-hidden">
+                    <div class="row">
+                        <!-- Nombre y Apellido -->
+                        <div class="col-md-4 mb-3">
+                            <label for="newNombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="newNombre" name="Nombre" placeholder="Escribe Nombres" required oninvalid="this.setCustomValidity('El campo Nombre es obligatorio')" oninput="this.setCustomValidity('')">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="newApellido" class="form-label">Apellido</label>
+                            <input type="text" class="form-control" id="newApellido" name="Apellido" placeholder="Escribe Apellidos">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="newTelefono" class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" id="newTelefono" name="Telefono" placeholder="Escribe Telefono"
+                                   required oninvalid="this.setCustomValidity('El campo Telefono es obligatorio')" oninput="this.setCustomValidity('')">
+                        </div>
+
+                        <!-- Departamento -->
+                        <div class="col-md-4 mb-3">
+                            <label for="newDepartamento" class="form-label">Departamento</label>
+                            <select class="form-select" id="newDepartamento" name="Departamento">
+                            </select>
+                        </div>
+
+                        <!-- Dirección -->
+                        <div class="col-md-8 mb-3">
+                            <label for="newDireccion" class="form-label">Dirección</label>
+                            <textarea class="form-control" id="newDireccion" name="Direccion" rows="2" placeholder="Escribe Dirección"></textarea>
+                        </div>
+
+                        <!-- Puesto -->
+                        <div class="col-md-4 mb-3">
+                            <label for="newPuesto" class="form-label">Puesto</label>
+                            <select class="form-select" id="newPuesto" name="IdPuesto">
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-secondary">Registrar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para Usuario del Colaborador -->
+<div class="modal fade" id="UserColaborador" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <form id="formUsuarioColaborador" action="/Auxiliares/CrudLogin" method="post" class="w-100 h-100">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Login</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-secundario overflow-auto overflow-x-hidden">
+                    <div class="row">
+                        <input type="hidden" name="IdColaborador" id="IdColaborador">
+                        <!-- Nombre y Apellido -->
+                        <div class="col-md-6 mb-3">
+                            <label for="UserNombre" class="form-label">Nombre Usuario</label>
+                            <input type="text" class="form-control" id="UserNombre" name="Usuario" placeholder="Escribe Nombre del Usuario"
+                                   required oninvalid="this.setCustomValidity('El campo Usuario es obligatorio')" oninput="this.setCustomValidity('')">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="UserPass" class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="UserPass" name="Password" placeholder="Escribe Contraseña"
+                                   required oninvalid="this.setCustomValidity('El campo Contraseña es obligatorio')" oninput="this.setCustomValidity('')">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-secondary">Guardar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para Editar Colaborador -->
+<div class="modal fade" id="editUserModel" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen" role="document">
+        <form id="formEditarColaborador" action="/Auxiliares/EdiarColaborador" method="post" class="w-100 h-100">
+            <div class="modal-content h-100">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Colaborador</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-secundario overflow-auto overflow-x-hidden">
+                    <div class="row">
+                        <input type="hidden" name="Id" id="editIdColaborador">
+                        <!-- Nombre y Apellido -->
+                        <div class="col-md-4 mb-3">
+                            <label for="editNombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="editNombre" name="Nombre" placeholder="Escribe Nombres"
+                                   required oninvalid="this.setCustomValidity('El campo Nombre es obligatorio')" oninput="this.setCustomValidity('')">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="editApellido" class="form-label">Apellido</label>
+                            <input type="text" class="form-control" id="editApellido" name="Apellido">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="editTelefono" class="form-label">Teléfono</label>
+                            <input type="text" class="form-control" id="editTelefono" name="Telefono" placeholder="Escribe Telefono"
+                                   required oninvalid="this.setCustomValidity('El campo Telefono es obligatorio')" oninput="this.setCustomValidity('')">
+                        </div>
+
+                        <!-- Departamento -->
+                        <div class="col-md-4 mb-3">
+                            <label for="editDepartamento" class="form-label">Departamento</label>
+                            <select class="form-select" id="editDepartamento" name="Departamento">
+                            </select>
+                        </div>
+
+                        <!-- Dirección -->
+                        <div class="col-md-8 mb-3">
+                            <label for="editDireccion" class="form-label">Dirección</label>
+                            <textarea class="form-control" id="editDireccion" name="Direccion" rows="2"></textarea>
+                        </div>
+
+                        <!-- Puesto -->
+                        <div class="col-md-4 mb-3">
+                            <label for="editPuesto" class="form-label">Puesto</label>
+                            <select class="form-select" id="editPuesto" name="IdPuesto">
+                            </select>
+                        </div>
+
+                        <!-- Tipo de Activo -->
+                        <div class="col-md-2 mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="editActivo" name="Activo" value="true">
+                            <label class="form-check-label" for="editActivo">¿Activo?</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-secondary">Editar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para ver Colaborador -->
+<div class="modal fade" id="veruserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content h-100">
+            <div class="modal-header">
+                <h5 class="modal-title">Datos de Colaborador</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body bg-secundario overflow-auto overflow-x-hidden">
+                <div class="row">
+                    <!-- Nombre -->
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Nombre</label>
+                        <p id="verNombre" class="form-control-plaintext"></p>
+                    </div>
+
+                    <!-- Apellido -->
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Apellido</label>
+                        <p id="verApellido" class="form-control-plaintext"></p>
+                    </div>
+
+                    <!-- Teléfono -->
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <p id="verTelefono" class="form-control-plaintext"></p>
+                    </div>
+
+                    <!-- Departamento -->
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Departamento</label>
+                        <p id="verDepartamento" class="form-control-plaintext"></p>
+                    </div>
+
+                    <!-- Dirección -->
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Dirección</label>
+                        <p id="verDireccion" class="form-control-plaintext"></p>
+                    </div>
+
+                    <!-- Puesto -->
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Puesto</label>
+                        <p id="verPuesto" class="form-control-plaintext"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Ok</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="formEliminarCliente" action="/Auxiliares/EliminarColaborador" method="post">
+    <input type="hidden" name="id" id="inputIdEliminar">
+</form>
+
+<script src="~/js/colaboradores.js"></script>

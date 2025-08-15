@@ -1,0 +1,184 @@
+﻿@{
+    ViewData["Title"] = "CorteRuta";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<link href="~/css/corteruta.css" rel="stylesheet" />
+
+<div class="container-fluid py-4">
+    <!-- Header del Corte -->
+    <div class="corte-header text-center">
+        <h1 class="mb-2">
+            <i class="fas fa-calculator me-3"></i>
+            Corte de Caja por Gestor
+        </h1>
+        <div class="row justify-content-center mb-3">
+            <div class="col-md-6 col-lg-4">
+                <label class="form-label fw-semibold">
+                    <i class="fas fa-calendar-day me-2"></i>
+                    Fecha del Corte
+                </label>
+                <input type="date" class="form-control" id="fechaCorteSelect">
+            </div>
+        </div>
+        <p class="mb-0 fs-5">
+            <i class="fas fa-calendar-day me-2"></i>
+            <span id="fechaCorte">Miércoles, 23 de Junio 2025</span>
+        </p>
+        <p class="mb-0">
+            <i class="fas fa-clock me-2"></i>
+            Generado: <span id="horaCorte">--:--</span>
+        </p>
+    </div>
+
+    <!-- Resumen General del Día -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Resumen General del Día
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="bg-success text-white p-3 rounded">
+                                <i class="fas fa-arrow-down fa-2x mb-2"></i>
+                                <h4 id="totalIngresosGeneral">$0.00</h4>
+                                <p class="mb-0">Total Ingresos</p>
+                                <small id="cantidadIngresosGeneral">0 transacciones</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="bg-danger text-white p-3 rounded">
+                                <i class="fas fa-arrow-up fa-2x mb-2"></i>
+                                <h4 id="totalEgresosGeneral">$0.00</h4>
+                                <p class="mb-0">Total Egresos</p>
+                                <small id="cantidadEgresosGeneral">0 transacciones</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="bg-primary text-white p-3 rounded">
+                                <i class="fas fa-balance-scale fa-2x mb-2"></i>
+                                <h4 id="balanceNetoGeneral">$0.00</h4>
+                                <p class="mb-0">Balance Neto</p>
+                                <small>Ingresos - Egresos</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="bg-info text-white p-3 rounded">
+                                <i class="fas fa-users fa-2x mb-2"></i>
+                                <h4 id="totalGestores">0</h4>
+                                <p class="mb-0">Gestores Activos</p>
+                                <small>Con movimientos</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cortes por Gestor -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-tie me-2"></i>
+                        Cortes Individuales por Gestor
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="cortesGestores">
+                        <div class="text-center py-4">
+                            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                            <p class="text-muted mt-2">Cargando información de gestores...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Desglose Detallado (Solo cuando haya datos) -->
+    <div class="row mb-4" id="desglobeDetallado" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        Desglose Detallado por Tipo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-hand-holding-usd text-primary fa-2x mb-2"></i>
+                                    <h4 class="text-primary mb-1" id="totalCapital">$0.00</h4>
+                                    <p class="mb-0 fw-semibold">Capital</p>
+                                    <small class="text-muted">
+                                        <span id="cantidadCapital">0</span> pagos
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-percentage text-success fa-2x mb-2"></i>
+                                    <h4 class="text-success mb-1" id="totalInteres">$0.00</h4>
+                                    <p class="mb-0 fw-semibold">Interés</p>
+                                    <small class="text-muted">
+                                        <span id="cantidadInteres">0</span> pagos
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-exclamation-triangle text-warning fa-2x mb-2"></i>
+                                    <h4 class="text-warning mb-1" id="totalMora">$0.00</h4>
+                                    <p class="mb-0 fw-semibold">Mora</p>
+                                    <small class="text-muted">
+                                        <span id="cantidadMora">0</span> pagos
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card border-info">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-money-bill-wave text-info fa-2x mb-2"></i>
+                                    <h4 class="text-info mb-1" id="totalDesembolsos">$0.00</h4>
+                                    <p class="mb-0 fw-semibold">Desembolsos</p>
+                                    <small class="text-muted">
+                                        <span id="cantidadDesembolsos">0</span> préstamos
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <h4>Procesando...</h4>
+        <p>Generando corte de caja, por favor espere...</p>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="~/js/corteruta.js"></script>
