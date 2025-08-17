@@ -51,5 +51,7 @@ public partial class Pagosdetalle
 
     public decimal? Domicilio { get; set; }
 
+    public decimal? CuentaColchon { get; set; }
+
     public virtual Prestamo IdprestamoNavigation { get; set; }
 }

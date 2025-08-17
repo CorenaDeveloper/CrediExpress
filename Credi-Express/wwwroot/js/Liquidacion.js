@@ -79,115 +79,97 @@ function buscarPrestamo() {
 function mostrarInformacionPrestamo(response) {
     const prestamo = response.prestamo;
     const estadisticas = response.estadisticas;
-    console.log(response);
+
+    console.log('📋 Mostrando información del préstamo:', prestamo);
+    console.log('📊 Estadísticas:', estadisticas);
+
     // Información básica del préstamo
     $('#prestamoId').text(prestamo.id);
     $('#prestamoCliente').text(prestamo.nombreCliente || 'Cliente no especificado');
     $('#prestamoMonto').text('$' + formatNumber(prestamo.monto || 0));
-    $('#prestamoFecha').text(formatearFecha(prestamo.fecha));
-    $('#prestamoTipo').text(prestamo.tipoPrestamo || 'No especificado');
+    $('#prestamoFecha').text(prestamo.fecha || 'Sin fecha');
+    $('#prestamoTipo').text(prestamo.tipoPrestamo || 'NORMAL');
     $('#prestamoCuotas').text((prestamo.numCoutas || 0) + ' cuotas');
     $('#prestamoCuotaMensual').text('$' + formatNumber(prestamo.cuotas || 0));
     $('#prestamoTasa').text((prestamo.tasa || 0) + '%');
 
     // Estadísticas de pagos
-    $('#estadoCuotasPagadas').text(estadisticas.cuotasPagadas);
-    $('#estadoCuotasPendientes').text(estadisticas.cuotasPendientes);
-    $('#estadoCapitalPagado').text('$' + formatNumber(estadisticas.capitalPagado));
-    $('#estadoSaldoPendiente').text('$' + formatNumber(estadisticas.saldoCapital));
-    $('#estadoInteresPendiente').text('$' + formatNumber(estadisticas.interesPendiente));
+    $('#estadoCuotasPagadas').text(estadisticas.cuotasPagadas || 0);
+    $('#estadoCuotasPendientes').text(estadisticas.cuotasPendientes || 0);
+    $('#estadoCapitalPagado').text('$' + formatNumber(estadisticas.capitalPagado || 0));
+    $('#estadoInteresPagado').text('$' + formatNumber(estadisticas.interesPagado || 0));
+    $('#estadoTotalPagado').text('$' + formatNumber(estadisticas.totalPagado || 0));
+    $('#estadoPorcentajePagado').text((estadisticas.porcentajePagado || 0).toFixed(1) + '%');
 
-    // Progreso visual
-    const porcentajePagado = estadisticas.porcentajePagado || 0;
-    $('#progressBar').css('width', porcentajePagado + '%').text(Math.round(porcentajePagado) + '%');
+    // Información de liquidación
+    mostrarCalculosLiquidacion(estadisticas);
 
-    // Llenar tabla de historial
-    llenarHistorialPagos(response.historialPagos);
-
-    // Mostrar cálculo de liquidación
-    mostrarCalculoLiquidacion(estadisticas);
+    // Mostrar historial de pagos si existe
+    if (response.historialPagos && response.historialPagos.length > 0) {
+        mostrarHistorialPagos(response.historialPagos);
+    }
 }
 
-// ===== LLENAR TABLA DE HISTORIAL DE PAGOS =====
-function llenarHistorialPagos(historialPagos) {
-    const tbody = $('#tablaHistorial tbody');
+// ===== MOSTRAR CÁLCULOS DE LIQUIDACIÓN =====
+function mostrarCalculosLiquidacion(estadisticas) {
+    console.log('💰 Calculando liquidación con estadísticas:', estadisticas);
+
+    // Llenar valores en el resumen financiero
+    $('#capitalPendiente').text('$' + formatNumber(estadisticas.saldoCapital || 0));
+    $('#interesPendiente').text('$' + formatNumber(estadisticas.interesPendiente || 0));
+    $('#interesConDescuento').text('$' + formatNumber(estadisticas.interesConDescuento || 0));
+    $('#liquidacionTotal').text('$' + formatNumber(estadisticas.totalLiquidacion || 0));
+    $('#ahorroDescuento').text('$' + formatNumber(estadisticas.ahorroCliente || 0));
+
+    // Llenar campo oculto para el formulario
+    $('#montoLiquidacion').val((estadisticas.totalLiquidacion || 0).toFixed(2));
+
+    // Habilitar botón de confirmación si hay monto pendiente
+    if (estadisticas.saldoCapital > 0) {
+        $('#btnConfirmarLiquidacion').prop('disabled', false);
+        console.log('✅ Botón de liquidación habilitado');
+    } else {
+        $('#btnConfirmarLiquidacion').prop('disabled', true);
+        console.log('⚠️ Botón de liquidación deshabilitado - Sin saldo pendiente');
+    }
+}
+
+// ===== MOSTRAR HISTORIAL DE PAGOS =====
+function mostrarHistorialPagos(historial) {
+    const tbody = $('#historialPagosTabla tbody');
     tbody.empty();
 
-    if (!historialPagos || historialPagos.length === 0) {
+    if (!historial || historial.length === 0) {
         tbody.append(`
             <tr>
-                <td colspan="7" class="text-center text-muted py-4">
-                    <i class="fas fa-inbox fa-2x mb-2"></i><br>
-                    No se encontraron pagos registrados
+                <td colspan="6" class="text-center text-muted">
+                    <i class="fas fa-info-circle me-2"></i>
+                    No hay historial de pagos disponible
                 </td>
             </tr>
         `);
         return;
     }
 
-    // Filtrar solo los pagos válidos (no desembolsos)
-    const pagosValidos = historialPagos.filter(pago => pago.tipoMovimiento !== 'DESEMBOLSO');
-
-    if (pagosValidos.length === 0) {
-        tbody.append(`
+    historial.forEach(function (pago) {
+        const fila = `
             <tr>
-                <td colspan="7" class="text-center text-muted py-4">
-                    <i class="fas fa-info-circle fa-2x mb-2"></i><br>
-                    Solo se encontró el registro de desembolso
-                </td>
-            </tr>
-        `);
-        return;
-    }
-
-    // Agregar filas de pagos
-    pagosValidos.forEach(pago => {
-        const esLiquidacion = pago.numeroPago === 999;
-        const estadoClass = esLiquidacion ? 'bg-info text-white' : 'bg-success text-white';
-        const estadoTexto = esLiquidacion ? 'LIQUIDACIÓN' : 'PAGADO';
-        const iconoEstado = esLiquidacion ? '<i class="fas fa-hand-holding-usd"></i>' : '<i class="fas fa-check-circle"></i>';
-
-        tbody.append(`
-            <tr class="${estadoClass}">
-                <td class="text-center fw-bold">
-                    ${esLiquidacion ? 'LIQ' : (pago.numeroPago || '-')}
-                </td>
-                <td>
-                    <div>${formatearFecha(pago.fechaPago)}</div>
-                    ${pago.fechaCuota ? `<small class="text-light opacity-75">Cuota: ${formatearFecha(pago.fechaCuota)}</small>` : ''}
-                </td>
-                <td class="text-end fw-bold">$${formatNumber(pago.monto || 0)}</td>
-                <td class="text-end">$${formatNumber(pago.capital || 0)}</td>
-                <td class="text-end">$${formatNumber(pago.interes || 0)}</td>
-                <td class="text-end">$${formatNumber(pago.mora || 0)}</td>
+                <td>${pago.fecha}</td>
+                <td class="text-center">${pago.numeroCuota}</td>
+                <td class="text-end">$${formatNumber(pago.monto)}</td>
+                <td class="text-end">$${formatNumber(pago.capital)}</td>
+                <td class="text-end">$${formatNumber(pago.interes)}</td>
                 <td class="text-center">
-                    ${iconoEstado}
-                    <div class="small">${estadoTexto}</div>
+                    <span class="badge bg-primary">${pago.tipoPago}</span>
                 </td>
             </tr>
-        `);
+        `;
+        tbody.append(fila);
     });
 
-    // Agregar fila de totales
-    const totalMonto = pagosValidos.reduce((sum, p) => sum + (p.monto || 0), 0);
-    const totalCapital = pagosValidos.reduce((sum, p) => sum + (p.capital || 0), 0);
-    const totalInteres = pagosValidos.reduce((sum, p) => sum + (p.interes || 0), 0);
-    const totalMora = pagosValidos.reduce((sum, p) => sum + (p.mora || 0), 0);
-
-    tbody.append(`
-        <tr class="table-dark">
-            <td class="text-center fw-bold">TOTAL</td>
-            <td class="fw-bold">${pagosValidos.length} pagos</td>
-            <td class="text-end fw-bold">$${formatNumber(totalMonto)}</td>
-            <td class="text-end fw-bold">$${formatNumber(totalCapital)}</td>
-            <td class="text-end fw-bold">$${formatNumber(totalInteres)}</td>
-            <td class="text-end fw-bold">$${formatNumber(totalMora)}</td>
-            <td class="text-center">
-                <i class="fas fa-calculator"></i>
-            </td>
-        </tr>
-    `);
+    console.log(`📋 Historial de pagos mostrado: ${historial.length} registros`);
 }
+
 
 // ===== MOSTRAR CÁLCULO DE LIQUIDACIÓN =====
 function mostrarCalculoLiquidacion(estadisticas) {
@@ -218,29 +200,45 @@ function confirmarLiquidacion() {
     const observaciones = $('#observacionesLiquidacion').val().trim();
     if (!observaciones) {
         mostrarError('Por favor ingrese las observaciones de la liquidación');
+        $('#observacionesLiquidacion').focus();
         return;
     }
 
     if (observaciones.length < 10) {
         mostrarError('Las observaciones deben tener al menos 10 caracteres');
+        $('#observacionesLiquidacion').focus();
         return;
     }
 
-    // Mostrar confirmación
+    const montoLiquidacion = parseFloat($('#montoLiquidacion').val()) || 0;
+
+    // Mostrar confirmación detallada
     Swal.fire({
         title: '¿Confirmar Liquidación?',
         html: `
             <div class="text-start">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Información del Préstamo</strong>
+                </div>
                 <p><strong>Préstamo #:</strong> ${prestamoActual.id}</p>
                 <p><strong>Cliente:</strong> ${prestamoActual.nombreCliente}</p>
-                <p><strong>Capital pendiente:</strong> <span class="text-primary fw-bold">$${formatNumber(saldoPendiente)}</span></p>
-                <p><strong>Interés con descuento:</strong> <span class="text-info fw-bold">$${formatNumber(totalInteresPendiente * 0.9)}</span></p>
-                <p><strong>Monto total a liquidar:</strong> <span class="text-success fw-bold">$${$('#liquidacionTotal').text().replace('$', '').replace(',', '')}</span></p>
+                <p><strong>Monto original:</strong> <span class="text-primary">$${formatNumber(prestamoActual.monto)}</span></p>
+                
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-calculator me-2"></i>
+                    <strong>Resumen de Liquidación</strong>
+                </div>
+                <p><strong>Capital pendiente:</strong> <span class="text-danger">$${formatNumber(saldoPendiente)}</span></p>
+                <p><strong>Interés con descuento (10%):</strong> <span class="text-success">$${formatNumber(totalInteresPendiente * 0.9)}</span></p>
+                <p><strong>Total a liquidar:</strong> <span class="text-primary fw-bold">$${formatNumber(montoLiquidacion)}</span></p>
+                <p><strong>Ahorro del cliente:</strong> <span class="text-success fw-bold">$${formatNumber(totalInteresPendiente * 0.1)}</span></p>
+                
+                <div class="alert alert-danger mt-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>¡ATENCIÓN!</strong> Esta acción liquidará completamente el préstamo y no se puede deshacer.
+                </div>
                 <p><strong>Observaciones:</strong> ${observaciones}</p>
-            </div>
-            <div class="alert alert-warning mt-3">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                Esta acción <strong>liquidará completamente el préstamo</strong> y no se puede deshacer.
             </div>
         `,
         icon: 'question',
@@ -249,7 +247,7 @@ function confirmarLiquidacion() {
         cancelButtonText: 'Cancelar',
         confirmButtonColor: '#28a745',
         cancelButtonColor: '#dc3545',
-        width: '600px'
+        width: '700px'
     }).then((result) => {
         if (result.isConfirmed) {
             procesarLiquidacion();
@@ -259,7 +257,7 @@ function confirmarLiquidacion() {
 
 // ===== PROCESAR LIQUIDACIÓN =====
 function procesarLiquidacion() {
-    const montoLiquidacion = parseFloat($('#montoLiquidacion').val());
+    const montoLiquidacion = parseFloat($('#montoLiquidacion').val()) || 0;
     const observaciones = $('#observacionesLiquidacion').val().trim();
 
     // Mostrar loading
@@ -279,6 +277,7 @@ function procesarLiquidacion() {
         contentType: false,
         success: function (response) {
             ocultarLoading();
+            console.log('✅ Respuesta de liquidación:', response);
 
             if (response.success) {
                 // Mostrar éxito con detalles completos
@@ -300,29 +299,19 @@ function procesarLiquidacion() {
                                 </div>
                                 <div class="col-md-6">
                                     <h6 class="text-success">Detalles de Liquidación:</h6>
-                                    <p><strong>Capital Pendiente:</strong> $${formatNumber(response.data.capitalPendiente)}</p>
+                                    <p><strong>Capital Liquidado:</strong> $${formatNumber(response.data.capitalPendiente)}</p>
                                     <p><strong>Interés con Descuento:</strong> $${formatNumber(response.data.interesConDescuento)}</p>
-                                    <p class="text-success"><strong>Descuento Aplicado:</strong> $${formatNumber(response.data.descuentoAplicado)}</p>
+                                    <p><strong>Total Liquidado:</strong> $${formatNumber(response.data.totalLiquidado)}</p>
+                                    <p><strong>Ahorro del Cliente:</strong> <span class="text-success">$${formatNumber(response.data.ahorroCliente)}</span></p>
                                 </div>
-                            </div>
-                            
-                            <hr>
-                            <div class="text-center">
-                                <h5 class="text-success">
-                                    <strong>Total Liquidado: $${formatNumber(response.data.totalLiquidado)}</strong>
-                                </h5>
-                                <p class="text-muted">Fecha: ${new Date(response.data.fechaLiquidacion).toLocaleString()}</p>
-                                <p class="text-success">
-                                    <i class="fas fa-gift me-1"></i>
-                                    Ahorro del cliente: $${formatNumber(response.data.ahorroCliente)}
-                                </p>
                             </div>
                         </div>
                     `,
                     icon: 'success',
-                    confirmButtonText: 'Aceptar',
-                    width: '600px'
+                    confirmButtonText: 'Continuar',
+                    confirmButtonColor: '#28a745'
                 }).then(() => {
+                    // Limpiar formulario después del éxito
                     limpiarFormulario();
                 });
             } else {
@@ -331,47 +320,86 @@ function procesarLiquidacion() {
         },
         error: function (xhr, status, error) {
             ocultarLoading();
-            mostrarError('Error de conexión al procesar la liquidación');
+            console.error('❌ Error al procesar liquidación:', error);
+
+            let mensaje = 'Error al procesar la liquidación';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                mensaje = xhr.responseJSON.message;
+            }
+
+            mostrarError(mensaje);
         }
     });
 }
 
 // ===== LIMPIAR FORMULARIO =====
 function limpiarFormulario() {
+    // Limpiar variables globales
     prestamoActual = null;
     saldoPendiente = 0;
     totalInteresPendiente = 0;
 
-    $('#numeroPrestamo, #observacionesLiquidacion, #montoLiquidacion').val('');
+    // Limpiar campos del formulario
+    $('#numeroPrestamo').val('');
+    $('#observacionesLiquidacion').val('');
+    $('#montoLiquidacion').val('');
+
+    // Limpiar información mostrada
+    $('#prestamoId, #prestamoCliente, #prestamoMonto, #prestamoFecha').text('');
+    $('#prestamoTipo, #prestamoCuotas, #prestamoCuotaMensual, #prestamoTasa').text('');
+    $('#estadoCuotasPagadas, #estadoCuotasPendientes, #estadoCapitalPagado').text('');
+    $('#estadoInteresPagado, #estadoTotalPagado, #estadoPorcentajePagado').text('');
+    $('#capitalPendiente, #interesPendiente, #interesConDescuento').text('$0.00');
+    $('#liquidacionTotal, #ahorroDescuento').text('$0.00');
+
+    // Limpiar tabla de historial
+    $('#historialPagosTabla tbody').empty();
+
+    // Ocultar secciones
     $('#seccionResultado, #seccionHistorial, #seccionLiquidacion').hide();
+
+    // Deshabilitar botón
     $('#btnConfirmarLiquidacion').prop('disabled', true);
+
+    // Enfocar en campo de búsqueda
     $('#numeroPrestamo').focus();
+
+    console.log('🧹 Formulario limpiado');
 }
 
 // ===== FUNCIONES AUXILIARES =====
-function mostrarLoading(mensaje) {
-    $('#loadingOverlay').show();
-    $('#loadingOverlay .loading-message').text(mensaje);
-}
-
-function ocultarLoading() {
-    $('#loadingOverlay').hide();
-}
-
 function mostrarError(mensaje) {
     Swal.fire({
         title: 'Error',
         text: mensaje,
         icon: 'error',
-        confirmButtonText: 'Aceptar'
+        confirmButtonText: 'Entendido',
+        confirmButtonColor: '#dc3545'
     });
 }
 
-function formatNumber(number) {
-    return new Intl.NumberFormat('es-ES', {
+function mostrarLoading(mensaje = 'Cargando...') {
+    Swal.fire({
+        title: mensaje,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+}
+
+function ocultarLoading() {
+    Swal.close();
+}
+
+function formatNumber(numero) {
+    if (!numero && numero !== 0) return '0.00';
+    return parseFloat(numero).toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
-    }).format(number || 0);
+    });
 }
 
 function formatearFecha(fecha) {

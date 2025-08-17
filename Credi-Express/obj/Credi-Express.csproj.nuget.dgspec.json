@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\programador04\\source\\repos\\Personales\\Credi-Express\\Credi-Express\\Credi-Express.csproj": {}
+    "C:\\Users\\programador04\\Documents\\GitHub\\CrediExpress\\Credi-Express\\Credi-Express.csproj": {}
   },
   "projects": {
-    "C:\\Users\\programador04\\source\\repos\\Personales\\Credi-Express\\Credi-Express\\Credi-Express.csproj": {
+    "C:\\Users\\programador04\\Documents\\GitHub\\CrediExpress\\Credi-Express\\Credi-Express.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\programador04\\source\\repos\\Personales\\Credi-Express\\Credi-Express\\Credi-Express.csproj",
+        "projectUniqueName": "C:\\Users\\programador04\\Documents\\GitHub\\CrediExpress\\Credi-Express\\Credi-Express.csproj",
         "projectName": "Credi-Express",
-        "projectPath": "C:\\Users\\programador04\\source\\repos\\Personales\\Credi-Express\\Credi-Express\\Credi-Express.csproj",
+        "projectPath": "C:\\Users\\programador04\\Documents\\GitHub\\CrediExpress\\Credi-Express\\Credi-Express.csproj",
         "packagesPath": "C:\\Users\\programador04\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\programador04\\source\\repos\\Personales\\Credi-Express\\Credi-Express\\obj\\",
+        "outputPath": "C:\\Users\\programador04\\Documents\\GitHub\\CrediExpress\\Credi-Express\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

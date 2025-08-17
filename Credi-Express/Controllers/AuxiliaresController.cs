@@ -3146,161 +3146,177 @@ namespace Credi_Express.Controllers
             public string MetodoPago { get; set; } = "LIQUIDACION_TOTAL";
         }
 
-        // ===== AGREGAR ESTE MÉTODO AL AuxiliaresController.cs =====
-
-        /// <summary>
+        // <summary>
         /// Obtiene un préstamo específico por su ID con toda la información necesaria para liquidación
         /// </summary>
         /// <param name="idPrestamo">ID del préstamo a buscar</param>
-        /// <returns>Información completa del préstamo</returns>
+        /// <returns>Información completa del préstamo para liquidación</returns>
         [HttpGet]
         public async Task<IActionResult> GetPrestamoById(int idPrestamo)
         {
             try
             {
+                Console.WriteLine($"🔍 Buscando préstamo con ID: {idPrestamo}");
+
                 // Buscar el préstamo con información del cliente
                 var prestamo = await context.Prestamos
                     .Where(p => p.Id == idPrestamo)
                     .Include(p => p.IdclienteNavigation)
-                    .Select(p => new
-                    {
-                        // Información básica del préstamo
-                        id = p.Id,
-                        idCliente = p.Idcliente,
-                        nombreCliente = p.IdclienteNavigation.Nombre + " " + p.IdclienteNavigation.Apellido,
-                        duiCliente = p.IdclienteNavigation.Dui,
-                        telefonoCliente = p.IdclienteNavigation.Celular ?? p.IdclienteNavigation.Telefono,
-
-                        // Detalles financieros
-                        fecha = p.Fecha,
-                        monto = p.Monto,
-                        tasa = p.Tasa,
-                        tasaDomicilio = p.TasaDomicilio,
-                        numCoutas = p.NumCoutas,
-                        cuotas = p.Cuota,
-                        interes = p.Interes,
-                        domicilio = p.Domicilio,
-                        proximoPago = p.ProximoPago,
-
-                        // Estado y tipo
-                        estado = p.Estado,
-                        estadoDescripcion = p.Estado == "A" ? "Activo" :
-                                          p.Estado == "C" ? "Cancelado" :
-                                          p.Estado == "E" ? "Eliminado" :
-                                          p.Estado == "P" ? "Pendiente" : "Desconocido",
-                        tipoPrestamo = p.TipoPrestamo,
-
-                        // Estados de aprobación
-                        aprobado = p.Aprobado == 1,
-                        detalleAprobado = p.DetalleAprobado,
-                        fechaCancelado = p.FechaCancelado,
-
-                        // Información de creación
-                        creadoPor = p.CreadaPor,
-                        fechaCreacion = p.FechaCreadafecha
-                    })
                     .FirstOrDefaultAsync();
 
                 if (prestamo == null)
                 {
-                    return Ok(new
+                    Console.WriteLine($"❌ Préstamo {idPrestamo} no encontrado");
+                    return Json(new
                     {
                         success = false,
-                        message = "Préstamo no encontrado"
+                        message = $"No se encontró un préstamo con el número {idPrestamo}"
                     });
                 }
 
-                // Obtener historial de pagos del préstamo
-                var historialPagos = await context.Pagosdetalles
-                    .Where(pd => pd.Idprestamo == idPrestamo && pd.Pagado == 1)
-                    .OrderByDescending(pd => pd.FechaPago)
-                    .ThenByDescending(pd => pd.Numeropago)
-                    .Select(pd => new
-                    {
-                        id = pd.Id,
-                        numeroPago = pd.Numeropago,
-                        fechaPago = pd.FechaPago,
-                        fechaCuota = pd.FechaCouta,
-                        monto = pd.Monto,
-                        capital = pd.Capital,
-                        interes = pd.Interes,
-                        mora = pd.Mora,
-                        domicilio = pd.Domicilio,
-                        tipoPago = pd.TipoPago,
-                        tipoMovimiento = pd.TipoMovimiento,
-                        observaciones = pd.ObservacionesMovimiento,
-                        creadoPor = pd.CreadoPor,
-                        fechaCreacion = pd.FechaCreacion
-                    })
+                Console.WriteLine($"✅ Préstamo encontrado: {prestamo.Id}");
+
+                // Obtener todos los pagos realizados
+                var pagosRealizados = await context.Pagosdetalles
+                    .Where(p => p.Idprestamo == idPrestamo && p.Pagado == 1)
                     .ToListAsync();
 
-                // Calcular estadísticas del préstamo
-                var pagosValidos = historialPagos.Where(p => p.tipoMovimiento != "DESEMBOLSO").ToList();
-                var capitalPagado = pagosValidos.Sum(p => p.capital ?? 0);
-                var interesPagado = pagosValidos.Sum(p => p.interes ?? 0);
-                var moraPagada = pagosValidos.Sum(p => p.mora ?? 0);
-                var totalPagado = pagosValidos.Sum(p => p.monto ?? 0);
+                // Calcular estadísticas de pago
+                decimal capitalPagado = pagosRealizados
+                    .Where(p => p.TipoMovimiento != "DESEMBOLSO")
+                    .Sum(p => p.Capital ?? 0);
+
+                decimal interesPagado = pagosRealizados
+                    .Where(p => p.TipoMovimiento != "DESEMBOLSO")
+                    .Sum(p => p.Interes ?? 0);
+
+                decimal moraPagada = pagosRealizados
+                    .Where(p => p.TipoMovimiento != "DESEMBOLSO")
+                    .Sum(p => p.Mora ?? 0);
 
                 // Calcular saldos pendientes
-                var saldoCapital = (prestamo.monto ?? 0) - capitalPagado;
-                var interesTotal = prestamo.interes ?? 0;
-                var interesPendiente = Math.Max(0, interesTotal - interesPagado);
+                decimal saldoCapital = (prestamo.Monto ?? 0) - capitalPagado;
+                decimal interesPendiente = (prestamo.Interes ?? 0) - interesPagado;
 
-                // Calcular liquidación con descuento (10% sobre intereses pendientes)
-                var descuentoInteres = interesPendiente * 0.10m;
-                var interesConDescuento = interesPendiente - descuentoInteres;
-                var totalLiquidacion = saldoCapital + interesConDescuento;
+                // Aplicar descuento del 10% al interés pendiente para liquidación
+                decimal interesConDescuento = interesPendiente * 0.9m;
+                decimal descuentoAplicado = interesPendiente * 0.1m;
+                decimal totalLiquidacion = saldoCapital + interesConDescuento;
 
-                // Construir respuesta completa
+                // Verificar si puede ser liquidado
+                bool puedeSerLiquidado = prestamo.Estado == "A" && saldoCapital > 0;
+                string razonNoLiquidable = "";
+
+                if (prestamo.Estado != "A")
+                {
+                    razonNoLiquidable = prestamo.Estado == "C" ? "El préstamo ya está cancelado" :
+                                       prestamo.Estado == "E" ? "El préstamo está eliminado" :
+                                       "El préstamo no está activo";
+                }
+                else if (saldoCapital <= 0)
+                {
+                    razonNoLiquidable = "El préstamo ya está completamente pagado";
+                }
+
+                Console.WriteLine($"📊 Estadísticas calculadas - Capital pendiente: {saldoCapital}, Interés pendiente: {interesPendiente}");
+
+                // Preparar respuesta completa
                 var respuesta = new
                 {
                     success = true,
-                    prestamo = prestamo,
-                    historialPagos = historialPagos,
+                    prestamo = new
+                    {
+                        // Información básica
+                        id = prestamo.Id,
+                        idCliente = prestamo.Idcliente,
+                        nombreCliente = $"{prestamo.IdclienteNavigation?.Nombre} {prestamo.IdclienteNavigation?.Apellido}".Trim(),
+                        duiCliente = prestamo.IdclienteNavigation?.Dui ?? "Sin DUI",
+                        telefonoCliente = prestamo.IdclienteNavigation?.Celular ?? prestamo.IdclienteNavigation?.Telefono ?? "Sin teléfono",
+
+                        // Detalles financieros
+                        fecha = prestamo.Fecha?.ToString("dd/MM/yyyy") ?? "Sin fecha",
+                        monto = prestamo.Monto ?? 0,
+                        tasa = prestamo.Tasa ?? 0,
+                        tasaDomicilio = prestamo.TasaDomicilio ?? 0,
+                        numCoutas = prestamo.NumCoutas ?? 0,
+                        cuotas = prestamo.Cuota ?? 0,
+                        interes = prestamo.Interes ?? 0,
+                        domicilio = prestamo.Domicilio ?? 0,
+                        proximoPago = prestamo.ProximoPago?.ToString("dd/MM/yyyy"),
+
+                        // Estado y tipo
+                        estado = prestamo.Estado,
+                        estadoDescripcion = prestamo.Estado == "A" ? "Activo" :
+                                          prestamo.Estado == "C" ? "Cancelado" :
+                                          prestamo.Estado == "E" ? "Eliminado" :
+                                          prestamo.Estado == "P" ? "Pendiente" : "Desconocido",
+                        tipoPrestamo = prestamo.TipoPrestamo ?? "NORMAL",
+
+                        // Fechas importantes
+                        fechaCreacion = prestamo.FechaCreadafecha?.ToString("dd/MM/yyyy"),
+                        fechaCancelado = prestamo.FechaCancelado?.ToString("dd/MM/yyyy")
+                    },
                     estadisticas = new
                     {
                         // Pagos realizados
-                        cuotasPagadas = pagosValidos.Count,
-                        cuotasPendientes = (prestamo.numCoutas ?? 0) - pagosValidos.Count,
                         capitalPagado = capitalPagado,
                         interesPagado = interesPagado,
                         moraPagada = moraPagada,
-                        totalPagado = totalPagado,
+                        totalPagado = capitalPagado + interesPagado + moraPagada,
 
                         // Saldos pendientes
                         saldoCapital = saldoCapital,
                         interesPendiente = interesPendiente,
 
                         // Cálculos de liquidación
-                        descuentoInteres = descuentoInteres,
                         interesConDescuento = interesConDescuento,
+                        descuentoAplicado = descuentoAplicado,
                         totalLiquidacion = totalLiquidacion,
-                        ahorroCliente = descuentoInteres,
+                        ahorroCliente = descuentoAplicado,
 
-                        // Progreso del préstamo
-                        porcentajePagado = prestamo.monto > 0 ? Math.Round((capitalPagado / (prestamo.monto ?? 1)) * 100, 2) : 0,
+                        // Estadísticas generales
+                        cuotasPagadas = pagosRealizados.Count(p => p.TipoMovimiento != "DESEMBOLSO"),
+                        cuotasPendientes = Math.Max(0, (prestamo.NumCoutas ?? 0) - pagosRealizados.Count(p => p.TipoMovimiento != "DESEMBOLSO")),
+                        porcentajePagado = prestamo.Monto > 0 ? (capitalPagado / prestamo.Monto) * 100 : 0,
 
-                        // Estado para liquidación
-                        puedeSerLiquidado = prestamo.estado == "A" &&
-                                           prestamo.aprobado &&
-                                           prestamo.detalleAprobado == "DESEMBOLSADO" &&
-                                           saldoCapital > 0,
+                        // Validación de liquidación
+                        puedeSerLiquidado = puedeSerLiquidado,
+                        razonNoLiquidable = razonNoLiquidable,
 
-                        razonNoLiquidable = prestamo.estado != "A" ? "Préstamo no está activo" :
-                                           !prestamo.aprobado ? "Préstamo no está aprobado" :
-                                           prestamo.detalleAprobado != "DESEMBOLSADO" ? "Préstamo no ha sido desembolsado" :
-                                           saldoCapital <= 0 ? "Préstamo ya está completamente pagado" : null
-                    }
+                        // Última actividad
+                        ultimoPago = pagosRealizados
+                            .Where(p => p.TipoMovimiento != "DESEMBOLSO")
+                            .OrderByDescending(p => p.FechaPago)
+                            .FirstOrDefault()?.FechaPago?.ToString("dd/MM/yyyy") ?? "Sin pagos"
+                    },
+                    historialPagos = pagosRealizados
+                        .Where(p => p.TipoMovimiento != "DESEMBOLSO")
+                        .OrderByDescending(p => p.FechaPago)
+                        .Take(10)
+                        .Select(p => new
+                        {
+                            id = p.Id,
+                            fecha = p.FechaPago?.ToString("dd/MM/yyyy") ?? "Sin fecha",
+                            numeroCuota = p.Numeropago,
+                            monto = p.Monto ?? 0,
+                            capital = p.Capital ?? 0,
+                            interes = p.Interes ?? 0,
+                            mora = p.Mora ?? 0,
+                            tipoPago = p.TipoPago ?? "EFECTIVO"
+                        })
+                        .ToList()
                 };
 
-                return Ok(respuesta);
+                Console.WriteLine($"✅ Respuesta preparada para préstamo {idPrestamo}");
+                return Json(respuesta);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new
+                Console.WriteLine($"❌ Error al buscar préstamo {idPrestamo}: {ex.Message}");
+                return Json(new
                 {
                     success = false,
-                    message = "Error interno del servidor",
+                    message = "Error interno al buscar el préstamo",
                     error = ex.Message
                 });
             }

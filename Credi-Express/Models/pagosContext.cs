@@ -404,6 +404,9 @@ public partial class pagosContext : DbContext
                 .HasColumnType("bit(1)")
                 .HasColumnName("corteCaja");
             entity.Property(e => e.CreadoPor).HasColumnName("CREADO_POR");
+            entity.Property(e => e.CuentaColchon)
+                .HasPrecision(8, 2)
+                .HasColumnName("CUENTA_COLCHON");
             entity.Property(e => e.Domicilio)
                 .HasPrecision(8, 2)
                 .HasColumnName("DOMICILIO");

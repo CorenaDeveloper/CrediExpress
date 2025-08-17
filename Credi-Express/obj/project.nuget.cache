@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "nMcVGcAEdXQ=",
+  "dgSpecHash": "DqP/X28zTZ4=",
   "success": true,
-  "projectFilePath": "C:\\Users\\programador04\\source\\repos\\Personales\\Credi-Express\\Credi-Express\\Credi-Express.csproj",
+  "projectFilePath": "C:\\Users\\programador04\\Documents\\GitHub\\CrediExpress\\Credi-Express\\Credi-Express.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\programador04\\.nuget\\packages\\humanizer\\2.14.1\\humanizer.2.14.1.nupkg.sha512",
     "C:\\Users\\programador04\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
