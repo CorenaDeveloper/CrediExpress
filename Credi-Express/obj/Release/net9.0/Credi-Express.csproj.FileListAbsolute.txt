@@ -1144,5 +1144,5 @@ C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\n
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\Credi-Express.pdb
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\Credi-Express.genruntimeconfig.cache
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\ref\Credi-Express.dll
-C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\compressed\zah4y56jo0-ye7bzzpmyn.gz
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\compressed\xmeaxs7ma0-keswn4o7xg.gz
+C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\compressed\zah4y56jo0-6s19rk2wzz.gz

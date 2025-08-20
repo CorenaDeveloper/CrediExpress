@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Credi-Express")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+54ccdb6a96924376bdc3e0e9de564c2e47c67398")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e079d30683c5358d4bb89d3c5eb97fa9e6bb5059")]
 [assembly: System.Reflection.AssemblyProductAttribute("Credi-Express")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Credi-Express")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

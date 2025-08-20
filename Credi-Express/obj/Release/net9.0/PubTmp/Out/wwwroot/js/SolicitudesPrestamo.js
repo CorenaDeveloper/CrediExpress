@@ -1065,500 +1065,364 @@ $(document).ready(function () {
     }
 
     // FUNCIÓN PARA CREAR EL PDF CON TODOS LOS DATOS
+    // FUNCIÓN PARA CREAR EL PDF CON TODOS LOS DATOS - ACTUALIZADA
     function crearPDFConDatos(solicitud, clienteDetalle) {
         try {
             // Calcular valores del préstamo
             const monto = parseFloat(solicitud.monto || 0);
             const tasa = parseFloat(solicitud.tasa || 0);
-            const tasaDomicilio = parseFloat(solicitud.tasaDomicilio || 0);
             const numCuotas = parseInt(solicitud.numCoutas || 1);
             const cuotaMensual = parseFloat(solicitud.cuotas || 0);
 
             const montoInteres = monto * (tasa / 100);
-            const montoDomicilio = monto * (tasaDomicilio / 100);
-            const montoTotal = monto + montoInteres + montoDomicilio;
-            const interesTotal = tasa + tasaDomicilio;
+            const montoTotal = monto + montoInteres;
+
             // Obtener fecha actual para el pagaré
             const fechaActual = new Date();
             const dia = fechaActual.getDate();
             const mes = fechaActual.toLocaleString('es-ES', { month: 'long' });
             const año = fechaActual.getFullYear();
 
-            // Calcular fecha de vencimiento (30 días después)
+            // Calcular fecha de vencimiento (basada en el plazo del préstamo)
             const fechaVencimiento = new Date(fechaActual);
-            fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
+            fechaVencimiento.setDate(fechaVencimiento.getDate() + (numCuotas * 30));
 
-            // DATOS DEL CLIENTE (ahora completos desde la API)
+            const diaVencimiento = fechaVencimiento.getDate();
+            const mesVencimiento = fechaVencimiento.toLocaleString('es-ES', { month: 'long' });
+            const añoVencimiento = fechaVencimiento.getFullYear();
+
+            // DATOS DEL CLIENTE
             const nombreCompleto = `${clienteDetalle.nombre || ''} ${clienteDetalle.apellido || ''}`.trim();
             const dui = clienteDetalle.dui || '';
             const nit = clienteDetalle.nit || '';
             const direccion = clienteDetalle.direccion || '';
             const departamento = clienteDetalle.departamentoNombre || '';
-            const telefono = clienteDetalle.telefono || '';
-            const celular = clienteDetalle.celular || '';
-            const profesion = clienteDetalle.profesion || '_______________________________________';
+            const edad = clienteDetalle.edad || '';
+            const profesion = clienteDetalle.profesion || 'comerciante';
 
-            // Variable que calcula la edad de forma segura
-            const edad = (() => {
-                // Verificar si fechaNacimiento existe y no está vacía
-                if (!clienteDetalle.fechaNacimiento ||
-                    clienteDetalle.fechaNacimiento === '' ||
-                    clienteDetalle.fechaNacimiento === null ||
-                    clienteDetalle.fechaNacimiento === undefined) {
-                    return ''; // Devolver vacío si no hay fecha
-                }
-
-                try {
-                    const fechaNac = new Date(clienteDetalle.fechaNacimiento);
-
-                    // Verificar que la fecha sea válida
-                    if (isNaN(fechaNac.getTime())) {
-                        return ''; // Devolver vacío si la fecha no es válida
-                    }
-
-                    const hoy = new Date();
-                    let edadCalculada = hoy.getFullYear() - fechaNac.getFullYear();
-                    const mesActual = hoy.getMonth();
-                    const mesNacimiento = fechaNac.getMonth();
-
-                    // Ajustar si aún no ha cumplido años este año
-                    if (mesActual < mesNacimiento ||
-                        (mesActual === mesNacimiento && hoy.getDate() < fechaNac.getDate())) {
-                        edadCalculada--;
-                    }
-
-                    // Verificar que la edad sea razonable (entre 0 y 120 años)
-                    if (edadCalculada < 0 || edadCalculada > 120) {
-                        return ''; // Devolver vacío si la edad no es razonable
-                    }
-
-                    return edadCalculada;
-
-                } catch (error) {
-                    console.error('Error calculando edad:', error);
-                    return ''; // Devolver vacío en caso de error
-                }
-            })();
-
-
-            // Función para convertir números a texto - VERSIÓN COMPLETA
-            function numeroATexto(numero) {
-                // Convertir a entero si viene como decimal
-                numero = Math.floor(numero);
-
-                // Arrays de referencia
+            // Convertir números a letras para el monto
+            function numeroALetras(num) {
                 const unidades = ['', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE'];
                 const decenas = ['', '', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'];
-                const centenas = ['', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
                 const especiales = ['DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'];
+                const centenas = ['', 'CIEN', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'];
 
-                // Casos especiales
-                if (numero === 0) return 'CERO';
-                if (numero === 1) return 'UN'; // Para "UN dólar"
-                if (numero === 100) return 'CIEN';
-                if (numero === 1000) return 'MIL';
+                if (num === 0) return 'CERO';
 
-                // Función auxiliar para convertir números de 1 a 999
-                function convertirCientos(num) {
-                    if (num === 0) return '';
-                    if (num === 100) return 'CIEN';
+                let letras = '';
+                let entero = Math.floor(num);
 
-                    let resultado = '';
-
-                    // Centenas
-                    if (num >= 100) {
-                        const cen = Math.floor(num / 100);
-                        resultado += centenas[cen];
-                        num = num % 100;
-                        if (num > 0) resultado += ' ';
-                    }
-
-                    // Decenas y unidades
-                    if (num >= 20) {
-                        const dec = Math.floor(num / 10);
-                        const uni = num % 10;
-                        resultado += decenas[dec];
-                        if (uni > 0) {
-                            resultado += ' Y ' + unidades[uni];
-                        }
-                    } else if (num >= 10) {
-                        resultado += especiales[num - 10];
-                    } else if (num > 0) {
-                        resultado += unidades[num];
-                    }
-
-                    return resultado;
+                if (entero >= 1000000) {
+                    let millones = Math.floor(entero / 1000000);
+                    letras += numeroALetras(millones) + ' MILLÓN ';
+                    if (millones > 1) letras = letras.replace('MILLÓN', 'MILLONES');
+                    entero = entero % 1000000;
                 }
 
-                // Convertir números hasta 999,999
-                if (numero < 1000) {
-                    return convertirCientos(numero);
-                }
-
-                if (numero < 1000000) {
-                    const miles = Math.floor(numero / 1000);
-                    const resto = numero % 1000;
-
-                    let resultado = '';
-
+                if (entero >= 1000) {
+                    let miles = Math.floor(entero / 1000);
                     if (miles === 1) {
-                        resultado = 'MIL';
+                        letras += 'MIL ';
                     } else {
-                        resultado = convertirCientos(miles) + ' MIL';
+                        letras += numeroALetras(miles) + ' MIL ';
                     }
-
-                    if (resto > 0) {
-                        resultado += ' ' + convertirCientos(resto);
-                    }
-
-                    return resultado;
+                    entero = entero % 1000;
                 }
 
-                // Para números muy grandes, devolver el número como string
-                return numero.toString();
+                if (entero >= 100) {
+                    let cientos = Math.floor(entero / 100);
+                    if (entero === 100) {
+                        letras += 'CIEN ';
+                    } else {
+                        letras += centenas[cientos] + ' ';
+                    }
+                    entero = entero % 100;
+                }
+
+                if (entero >= 20) {
+                    let dec = Math.floor(entero / 10);
+                    let uni = entero % 10;
+                    letras += decenas[dec];
+                    if (uni > 0) {
+                        letras += ' Y ' + unidades[uni];
+                    }
+                    letras += ' ';
+                } else if (entero >= 10) {
+                    letras += especiales[entero - 10] + ' ';
+                } else if (entero > 0) {
+                    letras += unidades[entero] + ' ';
+                }
+
+                return letras.trim();
             }
 
-            // DEFINIR EL DOCUMENTO PDF CON DATOS COMPLETOS
+            const montoEnLetras = numeroALetras(monto);
+
+            // CREAR DOCUMENTO PDF CON LA ESTRUCTURA EXACTA DEL PAGARÉ
             const docDefinition = {
                 pageSize: 'LETTER',
-                pageMargins: [40, 60, 40, 60],
+                pageMargins: [40, 40, 40, 40],
                 defaultStyle: {
-                    fontSize: 10
+                    fontSize: 11,
+                    lineHeight: 1.4
                 },
                 content: [
-                    // ENCABEZADO
+                    // PRIMER PAGARÉ
                     {
-                        text: 'PAGARÉ',
-                        fontSize: 16,
+                        text: 'PAGARE',
+                        fontSize: 14,
                         bold: true,
-                        decoration: 'underline',
-                        alignment: 'center',
+                        alignment: 'left',
                         margin: [0, 0, 0, 20]
                     },
-
-                    // MONTO
                     {
                         text: `POR $ ${monto.toFixed(2)}`,
                         fontSize: 12,
-                        bold: true,
                         alignment: 'right',
+                        margin: [0, -40, 0, 20]
+                    },
+                    {
+                        text: [
+                            'YO ',
+                            { text: nombreCompleto, decoration: 'underline' },
+                            ', de ',
+                            { text: edad.toString(), decoration: 'underline' },
+                            ' años de edad, domicilio del distrito ',
+                            { text: direccion, decoration: 'underline' },
+                            ', municipio de ',
+                            { text: departamento, decoration: 'underline' },
+                            ', de profesión u oficio ',
+                            { text: profesion },
+                            ', con Documento Único de Identidad homologado con mi número de identificación tributaria ',
+                            { text: nit, decoration: 'underline' },
+                            ' por este medio PAGARE, me obligo a pagar incondicionalmente a la orden de CREDI-EXPRESS DE EL SALVADOR SOCIEDAD ANONIMA DE CAPITAL VARIABLE, del domicilio de SONSONATE, la cantidad de ',
+                            { text: montoEnLetras, decoration: 'underline' },
+                            ' Dólares de los Estados Unidos de América (US$ ',
+                            { text: monto.toFixed(2), decoration: 'underline' },
+                            '), cantidad que devengara un interés nominal de ',
+                            { text: tasa.toString(), decoration: 'underline' },
+                            ' POR CIENTO MENSUAL (',
+                            { text: tasa.toString() + '%', decoration: 'underline' },
+                            ') En caso de mora en el cumplimiento de mi obligación reconoceré el interés moratorio del TRES POR CIENTO MENSUAL (3%) señalo como domicilio especial el de la ciudad de Sonsonate a cuyos tribunales me someto siendo a mi cargo cualquier gasto que la sociedad CREDI-EXPRESS DE EL SALVADOR SOCIEDAD ANONIMA DE CAPITAL VARIABLE, hiciere en el cobro de deuda, inclusive los llamados personales y aun cuando no depositare haya condenación en costas y faculto a la sociedad CREDI-EXPRESS DE EL SALVADOR SOCIEDAD ANONIMA DE CAPITAL VARIABLE, para que designe la depositaria de los bienes que se embarguen a quien releva de la obligación de rendir fianza en la ciudad de SONSONATE a los ',
+                            { text: dia.toString(), decoration: 'underline' },
+                            ' días del mes de ',
+                            { text: mes, decoration: 'underline' },
+                            ' del año ',
+                            { text: año.toString(), decoration: 'underline' }
+                        ],
+                        fontSize: 11,
+                        alignment: 'justify',
+                        lineHeight: 1.4,
+                        margin: [0, 0, 0, 30]
+                    },
+                    // Firmas del primer pagaré
+                    {
+                        columns: [
+                            {
+                                width: '50%',
+                                text: [
+                                    'F',
+                                    { text: '                                   ', decoration: 'underline' },
+                                    '\nNOMBRE DEL DEUDOR: \n',
+                                    { text: nombreCompleto, decoration: 'underline' }
+                                ],
+                                fontSize: 10
+                            },
+                            {
+                                width: '50%',
+                                text: [
+                                    'POR AVAL F',
+                                    { text: '                                   ', decoration: 'underline' },
+                                    '\nNOMBRE DEL AVALISTA: ',
+                                    { text: '                                   ', decoration: 'underline' },
+                                    '\nDUI: ',
+                                    { text: '                                      ', decoration: 'underline' },
+                                    '\nNIT: ',
+                                    { text: '                                      ', decoration: 'underline' }
+                                ],
+                                fontSize: 10
+                            }
+                        ],
+                        margin: [0, 0, 0, 40]
+                    },
+                    //Salto de página
+                    {
+                        text: '',
+                        pageBreak: 'before'
+                    },
+                    // SEGUNDO DOCUMENTO (CONTRATO)
+                    {
+                        text: [
+                            'YO ',
+                            { text: nombreCompleto, decoration: 'underline' },
+                            ', de ',
+                            { text: edad.toString(), decoration: 'underline' },
+                            ' años, ',
+                            { text: profesion },
+                            ', domicilio del distrito ',
+                            { text: direccion, decoration: 'underline' },
+                            ' municipio de ',
+                            { text: departamento, decoration: 'underline' },
+                            ' portador de mi Documento Único de Identidad homologado con mi número de identificación tributaria ',
+                            { text: nit, decoration: 'underline' },
+                            ' quien en este documento me denominaré "EL DEUDOR", OTORGO:'
+                        ],
+                        fontSize: 11,
+                        alignment: 'justify',
                         margin: [0, 0, 0, 15]
                     },
 
-                    // PRIMER PÁRRAFO CON DATOS REALES - CORREGIDO
+                    // Cláusulas del contrato
                     {
                         text: [
-                            'YO ',
-                            { text: nombreCompleto.toUpperCase(), decoration: 'underline', bold: true },
-                            ', de ',
-                            { text: edad ? edad.toString() : '_____' },
-                            ' años de edad, domicilio del distrito ',
-                            { text: direccion || '_________________________', decoration: 'underline' },
-                            ', municipio de ',
-                            { text: departamento || '______________________', decoration: 'underline' },
-                            ', de profesión u oficio ',
-                            { text: profesion.toLowerCase() }, // ← USAR PROFESIÓN REAL
-                            ', con Documento Único de Identidad homologado con mi número de identificación tributaria ',
-                            { text: dui || '_________________________', decoration: 'underline', bold: true },
-                            ' por este medio PAGARÉ, me obligo a pagar incondicionalmente a la orden de CREDI-EXPRESS DE EL SALVADOR SOCIEDAD ANONIMA DE CAPITAL VARIABLE, del domicilio de SONSONATE, la cantidad de '
+                            'I) MONTO: que recibo a título de MUTUO de CREDI-EXPRESS DE EL SALVADOR SOCIEDAD ANONIMA DE CAPITAL VARIABLE Que en adelante se denominare EL ACREEDOR La suma de ',
+                            { text: montoEnLetras, decoration: 'underline' },
+                            ' Dólares de los Estados Unidos de América'
                         ],
-                        margin: [0, 0, 0, 10],
+                        fontSize: 11,
                         alignment: 'justify',
-                        lineHeight: 1.3
+                        margin: [0, 0, 0, 5]
                     },
-                    // MONTO EN LETRAS Y NÚMEROS
+
                     {
-                        text: [
-                            { text: numeroATexto(Math.floor(monto)).toUpperCase(), decoration: 'underline', bold: true },
-                            ' Dólares de los Estados Unidos de América (US$ ',
-                            { text: monto.toFixed(2), decoration: 'underline', bold: true },
-                            '), cantidad que devengará un interés nominal de ',
-                            { text: numeroATexto(Math.floor(interesTotal)).toUpperCase(), decoration: 'underline', bold: true },
-                            ' POR CIENTO MENSUAL (',
-                            { text: interesTotal.toFixed(1) + '%', decoration: 'underline', bold: true },
-                            ')'
-                        ],
-                        margin: [0, 0, 0, 10],
+                        text: 'II) DESTINO: El deudor destinara la cantidad recibida para capital de trabajo.',
+                        fontSize: 11,
                         alignment: 'justify',
-                        lineHeight: 1.3
-                    },
-
-                    // CLÁUSULA DE MORA
-                    {
-                        text: 'En caso de mora en el cumplimiento de mi obligación reconoceré el interés moratorio del TRES POR CIENTO MENSUAL (3%) señalo como domicilio especial el de la ciudad de Sonsonate a cuyos tribunales me someto siendo a mi cargo cualquier gasto que la sociedad CREDI-EXPRESS DE EL SALVADOR SOCIEDAD ANONIMA DE CAPITAL VARIABLE, hiciere en el cobro de deuda, inclusive los llamados personales y aun cuando no depositare haya condenación en costas y faculto a la sociedad CREDI-EXPRESS DE EL SALVADOR SOCIEDAD ANONIMA DE CAPITAL VARIABLE, para que designe la depositaria de los bienes que se embarguen a quien releva de la obligación de rendir fianza en la ciudad de SONSONATE a los ',
-                        alignment: 'justify',
-                        margin: [0, 0, 0, 15],
-                        lineHeight: 1.3
-                    },
-
-                    // FECHA Y FIRMAS
-                    {
-                        columns: [
-                            {
-                                text: [
-                                    { text: dia.toString(), decoration: 'underline' },
-                                    ' días del mes de ',
-                                    { text: mes.toUpperCase(), decoration: 'underline' },
-                                    ' del año ',
-                                    { text: año.toString(), decoration: 'underline' }
-                                ],
-                                width: '60%'
-                            },
-                            {
-                                text: '',
-                                width: '40%'
-                            }
-                        ],
-                        margin: [0, 0, 0, 30]
-                    },
-
-                    // FIRMAS
-                    {
-                        columns: [
-                            {
-                                stack: [
-                                    { text: 'F_____________________________________', margin: [0, 20, 0, 5] },
-                                    { text: 'NOMBRE DEL DEUDOR:', bold: true },
-                                    { text: nombreCompleto.toUpperCase(), decoration: 'underline' },
-                                    {
-                                        text: [
-                                            'DUI: ',
-                                            { text: dui || '___________________________________', bold: true }
-                                        ],
-                                        width: '50%'
-                                    },
-                                    {
-                                        text: [
-                                            'NIT: ',
-                                            { text: nit || '____________________________________'}
-                                        ],
-                                        width: '50%'
-                                    }
-                                ],
-                                width: '50%'
-                            },
-                            {
-                                stack: [
-                                    { text: 'F___________________________', margin: [0, 20, 0, 5] },
-                                    { text: 'NOMBRE DEL AVALISTA:', bold: true },
-                                    { text: '_____________________________________', margin: [0, 0, 0, 5] }
-                                ],
-                                width: '50%'
-                            }
-                        ],
-                        margin: [0, 0, 0, 20]
-                    },
-
-                    
-
-                    // NUEVA PÁGINA - CONTRATO DE MUTUO
-                    { text: '', pageBreak: 'before' },
-
-                    // SEGUNDO DOCUMENTO - CONTRATO DE MUTUO
-                    {
-                        text: 'CONTRATO DE MUTUO',
-                        fontSize: 16,
-                        bold: true,
-                        decoration: 'underline',
-                        alignment: 'center',
-                        margin: [0, 0, 0, 20]
+                        margin: [0, 0, 0, 5]
                     },
 
                     {
                         text: [
-                            'YO ',
-                            { text: nombreCompleto.toUpperCase(), decoration: 'underline', bold: true },
-                            ', de ',
-                            { text: edad ? edad.toString() : '_____' },
-                            { text: 'años, '},
-                            { text: profesion.toLowerCase() },
-                            ', domicilio del distrito ',
-                            { text: direccion || '_________________________', decoration: 'underline' },
-                            ' municipio de ',
-                            { text: departamento || '_________________________', decoration: 'underline' },
-                            ' portador de mi Documento Único de Identidad homologado con mi número de identificación tributaria ',
-                            { text: dui || '_____________________________', decoration: 'underline', bold: true },
-                            ' quien en este documento me denominaré "EL DEUDOR", OTORGO:'
+                            'III) PLAZO: El deudor se obliga a pagar dicha suma dentro del plazo de ',
+                            { text: (numCuotas * 30).toString(), decoration: 'underline' },
+                            ' DIAS contados a partir de esta fecha, plazo que vence el día ',
+                            { text: `${diaVencimiento} de ${mesVencimiento} de ${añoVencimiento}`, decoration: 'underline' }
                         ],
-                        margin: [0, 0, 0, 15],
+                        fontSize: 11,
                         alignment: 'justify',
-                        lineHeight: 1.3
+                        margin: [0, 0, 0, 5]
                     },
 
-                    // CLÁUSULAS DEL CONTRATO EN TEXTO CORRIDO
+                    {
+                        text: 'IV) FORMA DE PAGO: El Deudor podrá amortizar a la deuda en cualquier momento antes del vencimiento del plazo',
+                        fontSize: 11,
+                        alignment: 'justify',
+                        margin: [0, 0, 0, 5]
+                    },
+
                     {
                         text: [
-                            { text: 'I) MONTO: ', bold: true },
-                            'que recibo a título de MUTUO de CREDI-EXPRESS DE EL SALVADOR SOCIEDAD ANONIMA DE CAPITAL VARIABLE Que en adelante se denominare EL ACREEDOR La suma de ',
-                            { text: numeroATexto(Math.floor(monto)), decoration: 'underline', bold: true },
-                            ' Dólares de los Estados Unidos de América (US$ ',
-                            { text: monto.toFixed(2), decoration: 'underline', bold: true },
-                            ') ',
-
-                            { text: 'II) DESTINO: ', bold: true },
-                            'El deudor destinará la cantidad recibida para capital de trabajo. ',
-
-                            { text: 'III) PLAZO: ', bold: true },
-                            'El deudor se obliga a pagar dicha suma dentro del plazo de 30 DÍAS contados a partir de esta fecha, plazo que vence el día ',
-                            { text: fechaVencimiento.toLocaleDateString('es-ES'), decoration: 'underline', bold: true },
-                            ' ',
-
-                            { text: 'IV) FORMA DE PAGO: ', bold: true },
-                            'El Deudor podrá amortizar a la deuda en cualquier momento antes del vencimiento del plazo ',
-
-                            { text: 'V) INTERESES: ', bold: true },
-                            'El Deudor pagará sobre la suma mutuada el interés del ',
-                            { text: tasa.toFixed(1) + '%', decoration: 'underline', bold: true },
+                            'V) INTERESES: El Deudor pagara sobre la suma mutuada el interés del ',
+                            { text: tasa.toString() + '%', decoration: 'underline' },
                             ' mensual sobre saldos, pagadero al vencimiento del plazo antes mencionado los cuales se mantendrán fijos durante el plazo del presente crédito más un recargo por cobranza a domicilio de (US$',
-                            { text: montoDomicilio.toFixed(2), decoration: 'underline', bold: true },
-                            ') Todo cálculo de intereses se hará sobre la base de un año calendario, por el actual número de días hasta el pago del crédito incluyendo el primero y excluyendo el ultimo día que ocurra durante el periodo en que dichos intereses deben pagarse. En caso de mora sin perjuicio del derecho del ACREEDOR a entablar acción ejecutiva, la tasa de interés se aumentara en tres puntos porcentuales por arriba de la tasa vigente y se calculara sobre saldos de capital en mora, sin que ello signifique prórroga del plazo y sin perjuicio de los demás efectos legales de la mora ',
-
-                            { text: 'VI) LUGAR E IMPUTACIÓN DE PAGOS: ', bold: true },
-                            'Todo pago será recibido en el domicilio del negocio del DEUDOR, se imputara primeramente a intereses, luego a los recargos y el saldo remanente, si lo hubiere al capital. ',
-
-                            { text: 'VII) PROCEDENCIA DE LOS FONDOS: ', bold: true },
-                            'Los fondos provenientes de este crédito son propios de CREDI-EXPRESS DE EL SALVADOR SOCIEDAD ANONIMA DE CAPITAL VARIABLE: Las partes declaran que tanto el efectivo recibido o cualquier otro medio de pago, con el que el Deudor pagara su obligación crediticia tiene procedencia LICITA ',
-
-                            { text: 'VIII) CADUCIDAD DEL PLAZO: ', bold: true },
-                            'La obligación se volverá exigible inmediatamente y en su totalidad al final del plazo establecido en este contrato y por incumplimiento por parte del Deudor en cualquiera de las obligaciones que ha contraído por medio de este instrumento, también podrá exigirse el pago total por acción judicial contra el DEUDOR iniciada por terceros o por el mismo ACREEDOR ',
-
-                            { text: 'IX) HONORARIOS Y GASTOS: ', bold: true },
-                            'Serán por cuenta del DEUDOR los gastos honorarios de este instrumento, así como todos los gastos en que el ACREEDOR tenga que incurrir para el cobro de mismo ',
-
-                            { text: 'X) DOMICILIO Y RENUNCIAS: ', bold: true },
-                            'Para los efectos legales de este contrato, el DEUDOR señala la ciudad de Sonsonate como domicilio especial, a la jurisdicción de cuyos tribunales judiciales se someten expresamente. El ACREEDOR: será depositario de los bienes que se embarquen, sin la obligación de rendir fianza quien podrá designar un representante para tal efecto ',
-
-                            { text: 'XI) GARANTIAS: ', bold: true },
-                            'PRENDARIA, En garantía de la presente obligación EL DEUDOR constituirá PRENDA SIN DESPLAZAMIENTO a favor del ACREEDOR sobre los bienes descritos en el anexo 1 de este instrumento, el cual ha sido firmado por él y por agente del ACREEDOR y que forma parte del presente instrumento los bienes prendados radicaran en un inmueble ubicado en el domicilio del DEUDOR. La prenda que constituirá EL DEUDOR a favor del ACREEDOR, Estará vigente durante el plazo del presente contrato y mientras existan saldos pendientes de pago a cargo del DEUDOR y a favor del ACREEDOR: El DEUDOR deberá mantener el valor de la prenda durante la vigencia del presente crédito, para lo cual se obliga a realizar las sustituciones o renovaciones de los bienes que fueren necesarias, todo a efecto de salvaguardar el derecho preferente sobre la prenda si los bienes en garantía se sustituyeses o deteriorases, al grado que no seas suficiente para garantizar la obligación del DEUDOR el ACREEDOR tendrá derecho a exigir mejoras en la garantía, y si el DEUDOR no se allanare a ello, o no pudiere cumplir con tal requisito vencerá el plazo de este contrato y la obligación se volverá exigible en su totalidad como de plazo vencido El ACREEDOR en cualquier momento durante la vigencia del presente crédito podrá inspeccionar y revisar dichos bienes, por medio de sus empleados y si encontrare deficiencia, podrá exigir que se corrijan los defectos y El DEUDOR se obliga por este medio a aceptar la reclamación del ACREEDOR.'
+                            { text: '    ', decoration: 'underline' },
+                            ') Todo cálculo de intereses se hará sobre la base de un año calendario, por el actual número de días hasta el pago del crédito incluyendo el primero y excluyendo el ultimo día que ocurra durante el periodo en que dichos intereses deben pagarse. En caso de mora sin perjuicio del derecho del ACREEDOR a entablar acción ejecutiva, la tasa de interés se aumentara en tres puntos porcentuales por arriba de la tasa vigente y se calculara sobre saldos de capital en mora, sin que ello signifique prórroga del plazo y sin perjuicio de los demás efectos legales de la mora'
                         ],
-                        margin: [0, 0, 0, 20],
+                        fontSize: 11,
                         alignment: 'justify',
-                        lineHeight: 1.3
-                    },
-
-                    // INFORMACIÓN ADICIONAL DEL CLIENTE
-                    {
-                        text: 'INFORMACIÓN DEL DEUDOR:',
-                        fontSize: 12,
-                        bold: true,
-                        margin: [0, 20, 0, 10]
+                        margin: [0, 0, 0, 5]
                     },
 
                     {
-                        table: {
-                            widths: ['30%', '70%'],
-                            body: [
-                                [{ text: 'Nombre Completo:', bold: true }, nombreCompleto.toUpperCase()],
-                                [{ text: 'DUI:', bold: true }, dui],
-                                [{ text: 'NIT:', bold: true }, nit || 'No proporcionado'],
-                                [{ text: 'Edad:', bold: true }, edad ? `${edad} años` : 'No especificada'],
-                                [{ text: 'Dirección:', bold: true }, direccion || 'No especificada'],
-                                [{ text: 'Departamento:', bold: true }, departamento || 'No especificado'],
-                                [{ text: 'Teléfono:', bold: true }, telefono || 'No proporcionado'],
-                                [{ text: 'Celular:', bold: true }, celular || 'No proporcionado']
-                            ]
-                        },
-                        layout: 'lightHorizontalLines',
+                        text: 'VI) LUGAR E IMPUTACION DE PAGOS: Todo pago será recibido en el domicilio del negocio del DEUDOR, se imputara primeramente a intereses, luego a los recargos y el saldo remanente, si lo hubiere al capital.',
+                        fontSize: 11,
+                        alignment: 'justify',
+                        margin: [0, 0, 0, 5]
+                    },
+
+                    {
+                        text: 'VII) PROCEDENCIA DE LOS FONDOS: Los fondos provenientes de este crédito son propios de CREDI-EXPRESS DE EL SALVADOR SOCIEDAD ANONIMA DE CAPITAL VARIABLE: Las partes declaran que tanto el efectivo recibido o cualquier otro medio de pago, con el que el Deudor pagara su obligación crediticia tiene procedencia LICITA',
+                        fontSize: 11,
+                        alignment: 'justify',
+                        margin: [0, 0, 0, 5]
+                    },
+
+                    {
+                        text: 'VIII) CADUCIDAD DEL PLAZO: La obligación se volverá exigible inmediatamente y en su totalidad al final del plazo establecido en este contrato y por incumplimiento por parte del Deudor en cualquiera de las obligaciones que ha contraído por medio de este instrumento, también podrá exigirse el pago total por acción judicial contra el DEUDOR iniciada por terceros o por el mismo ACREEDOR',
+                        fontSize: 11,
+                        alignment: 'justify',
+                        margin: [0, 0, 0, 5]
+                    },
+
+                    {
+                        text: 'IX) HONORARIOS Y GASTOS: Serán por cuenta del DEUDOR los gastos honorarios de este instrumento, así como todos los gastos en que el ACREEDOR tenga que incurrir para el cobro de mismo',
+                        fontSize: 11,
+                        alignment: 'justify',
+                        margin: [0, 0, 0, 5]
+                    },
+
+                    {
+                        text: 'X) DOMICILIO Y RENUNCIAS: Para los efectos legales de este contrato, el DEUDOR señala la ciudad de Sonsonate como domicilio especial, a la jurisdicción de cuyos tribunales judiciales se someten expresamente. El ACREEDOR: será depositario de los bienes que se embarquen, sin la obligación de rendir fianza quien podra designar un representante para tal efecto',
+                        fontSize: 11,
+                        alignment: 'justify',
+                        margin: [0, 0, 0, 5]
+                    },
+
+                    {
+                        text: 'XI) GARANTIAS: PRENDARIA, En garantía de la presente obligación EL DEUDOR constituirá PRENDA SIN DESPLAZAMIENTO a favor del ACREEDOR sobre los bienes descritos en el anexo 1 de este instrumento, el cual ha sido firmado por él y por agente del ACREEDOR y que forma parte del presente instrumento los bienes prendados radicaran en un inmueble ubicado en el domicilio del DEUDOR. La prenda que constituirá EL DEUDOR a favor del ACREEDOR, Estará vigente durante el plazo del presente contrato y mientras existan saldos pendientes de pago a cargo del DEUDOR y a favor del ACREEDOR: El DEUDOR deberá mantener el valor de la prenda durante la vigencia del presente crédito, para lo cual se obliga a realizar las sustituciones o renovaciones de los bienes que fueren necesarias, todo a efecto de salvaguardar el derecho preferente sobre la prenda si los bienes en garantía se sustituyeses o deteriorases, al grado que no seas suficiente para garantizar la obligación del DEUDOR el ACREEDOR tendrá derecho a exigir mejoras en la garantía, y si el DEUDOR no se allanare a ello, o no pudiere cumplir con tal requisito vencerá el plazo de este contrato y la obligación se volverá exigible en su totalidad como de plazo vencido El ACREEDOR en cualquier momento durante la vigencia del presente crédito podrá inspeccionar y revisar dichos bienes, por medio de sus empleados y si encontrare deficiencia, podrá exigir que se corrijan los defectos y El DEUDOR se obliga por este medio a aceptar la reclamación del ACREEDOR.',
+                        fontSize: 11,
+                        alignment: 'justify',
                         margin: [0, 0, 0, 20]
                     },
 
-                    // RESUMEN DEL CRÉDITO
-                    {
-                        text: 'RESUMEN DEL CRÉDITO:',
-                        fontSize: 12,
-                        bold: true,
-                        margin: [0, 20, 0, 10]
-                    },
-
-                    {
-                        table: {
-                            widths: ['40%', '60%'],
-                            body: [
-                                [{ text: 'Monto Principal:', bold: true }, `$ ${monto.toFixed(2)}`],
-                                [{ text: 'Tasa de Interés:', bold: true }, `${tasa.toFixed(1)}% mensual`],
-                                [{ text: 'Interés Total:', bold: true }, `$ ${montoInteres.toFixed(2)}`],
-                                [{ text: 'Recargo Domicilio:', bold: true }, `$ ${montoDomicilio.toFixed(2)}`],
-                                [{ text: 'Total a Pagar:', bold: true }, `$ ${montoTotal.toFixed(2)}`],
-                                [{ text: 'Número de Cuotas:', bold: true }, `${numCuotas} cuotas`],
-                                [{ text: 'Cuota Mensual:', bold: true }, `$ ${cuotaMensual.toFixed(2)}`]
-                            ]
-                        },
-                        layout: 'lightHorizontalLines',
-                        margin: [0, 0, 0, 30]
-                    },
-
-                    // FIRMAS FINALES
+                    // Firma final
                     {
                         text: [
                             'En fe de lo cual firmamos el presente instrumento en la ciudad de SONSONATE a los ',
                             { text: dia.toString(), decoration: 'underline' },
                             ' días del mes de ',
-                            { text: mes.toUpperCase(), decoration: 'underline' },
+                            { text: mes, decoration: 'underline' },
                             ' del año ',
                             { text: año.toString(), decoration: 'underline' }
                         ],
-                        margin: [0, 0, 0, 40],
-                        alignment: 'justify'
+                        fontSize: 11,
+                        alignment: 'justify',
+                        margin: [0, 0, 0, 30]
                     },
 
                     {
-                        columns: [
-                            {
-                                stack: [
-                                    { text: 'F_____________________________________', margin: [0, 20, 0, 5] },
-                                    { text: 'EL DEUDOR', bold: true, alignment: 'center' },
-                                    { text: nombreCompleto.toUpperCase(), alignment: 'center' }
-                                ],
-                                width: '50%'
-                            },
-                            {
-                                stack: [
-                                    { text: 'F_____________________________________', margin: [0, 20, 0, 5] },
-                                    { text: 'EL ACREEDOR', bold: true, alignment: 'center' },
-                                    { text: 'CREDI-EXPRESS DE EL SALVADOR', alignment: 'center', fontSize: 8 }
-                                ],
-                                width: '50%'
-                            }
-                        ]
+                        text: [
+                            'F',
+                            { text: '                                      ', decoration: 'underline' }
+                        ],
+                        fontSize: 10,
+                        alignment: 'center'
                     }
                 ]
             };
 
-            // Generar y descargar el PDF
-            setTimeout(() => {
-                const nombreArchivo = `Pagare_${solicitud.id}_${nombreCompleto.replace(/\s+/g, '_')}_${dui}`;
-                pdfMake.createPdf(docDefinition).download(`${nombreArchivo}.pdf`);
+            // Generar y mostrar PDF
+            pdfMake.createPdf(docDefinition).getDataUrl((dataUrl) => {
+                Swal.close();
 
                 Swal.fire({
-                    title: '¡Pagaré Generado! 📄',
+                    title: 'Pagaré Generado',
                     html: `
-                    <div class="text-center">
-                        <div class="alert alert-success mb-3">
-                            <i class="fas fa-file-pdf fa-3x text-danger mb-2"></i><br>
-                            <strong>El documento PDF se ha generado exitosamente</strong>
-                        </div>
-                        <p><strong>Solicitud N°:</strong> ${solicitud.id}</p>
-                        <p><strong>Cliente:</strong> ${nombreCompleto}</p>
-                        <p><strong>DUI:</strong> ${dui}</p>
-                        <p><strong>Monto:</strong> $ ${monto.toFixed(2)}</p>
+                    <div class="mb-3">
+                        <iframe src="${dataUrl}" width="100%" height="400px"></iframe>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-primary" onclick="window.open('${dataUrl}')">
+                            <i class="fas fa-external-link-alt me-1"></i>Abrir en nueva pestaña
+                        </button>
                     </div>
                 `,
-                    icon: 'success',
-                    confirmButtonColor: '#198754',
-                    confirmButtonText: '<i class="fas fa-check me-1"></i> Entendido',
-                    width: '500px'
+                    width: '80%',
+                    showConfirmButton: false,
+                    showCloseButton: true
                 });
-            }, 1000);
+            });
 
         } catch (error) {
-            console.error('Error generando PDF:', error);
+            console.error('Error generando pagaré:', error);
             Swal.fire({
-                title: 'Error al Generar PDF',
-                text: 'Ocurrió un error al generar el documento. Intente nuevamente.',
+                title: 'Error',
+                text: 'Error al generar el pagaré PDF: ' + error.message,
                 icon: 'error',
                 confirmButtonColor: '#dc3545'
             });
         }
+
     }
 
 });
