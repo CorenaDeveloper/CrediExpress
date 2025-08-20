@@ -413,7 +413,19 @@ $(document).ready(function () {
             });
         }
     });
-
+    // ==================== BOTÓN IMPRIMIR AUTORIZACION ====================
+    $('#btnImprimirManifiesto').on('click', function () {
+        if (solicitudActual) {
+            generarManifiestoDomicilio(solicitudActual);
+        } else {
+            Swal.fire({
+                title: 'Error',
+                text: 'No hay datos de solicitud disponibles',
+                icon: 'error',
+                confirmButtonColor: '#dc3545'
+            });
+        }
+    });
     // ==================== BOTÓN APROBAR ====================
     $('#btnAprobar').on('click', function () {
         // Obtener datos antes de cerrar el modal
@@ -1005,6 +1017,65 @@ $(document).ready(function () {
         });
     }
 
+    // ==================== FUNCIÓN GENERAR AUTORIZACION PDF ====================
+
+    function generarManifiestoDomicilio(solicitud) {
+        // Mostrar loading
+        Swal.fire({
+            title: 'Generando Manifiesto...',
+            html: `
+        <div class="text-center">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Generando...</span>
+            </div>
+            <p>Creando documento PDF</p>
+            <small class="text-muted">Por favor espere...</small>
+        </div>
+    `,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false
+        });
+
+        // EXTRAER DUI DEL NOMBRE
+        const nombreCompleto = solicitud.nombreCliente || '';
+        let dui = '';
+
+        // Buscar DUI entre paréntesis: (01872757-7)
+        const duiMatch = nombreCompleto.match(/\(([^)]+)\)/);
+        if (duiMatch) {
+            dui = duiMatch[1]; // Extraer solo el DUI sin paréntesis
+        }
+
+        if (!dui) {
+            Swal.fire({
+                title: 'Error',
+                text: 'No se pudo extraer el DUI del nombre del cliente',
+                icon: 'error',
+                confirmButtonColor: '#dc3545'
+            });
+            return;
+        }
+
+        // LLAMADA AJAX PARA OBTENER DATOS COMPLETOS DEL CLIENTE
+        $.ajax({
+            url: `/Auxiliares/GetClienteDetalle?dui=${dui}`,
+            method: 'GET',
+            success: function (clienteDetalle) {
+                crearManifiestoDomicilio(solicitud, clienteDetalle);
+            },
+            error: function (xhr, status, error) {
+                console.error('Error al obtener datos del cliente:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'No se pudieron obtener los datos completos del cliente',
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
+            }
+        });
+    }
+
     // ==================== FUNCIÓN GENERAR PAGARÉ PDF ====================
     function generarPagarePDF(solicitud) {
         // Mostrar loading
@@ -1065,7 +1136,6 @@ $(document).ready(function () {
     }
 
     // FUNCIÓN PARA CREAR EL PDF CON TODOS LOS DATOS
-    // FUNCIÓN PARA CREAR EL PDF CON TODOS LOS DATOS - ACTUALIZADA
     function crearPDFConDatos(solicitud, clienteDetalle) {
         try {
             // Calcular valores del préstamo
@@ -1425,5 +1495,134 @@ $(document).ready(function () {
 
     }
 
+    // FUNCIÓN PARA CREAR EL MANIFIESTO DE COBRO A DOMICILIO
+    function crearManifiestoDomicilio(solicitud, clienteDetalle) {
+        try {
+            // Obtener fecha actual para el manifiesto
+            const fechaActual = new Date();
+            const dia = fechaActual.getDate();
+            const mes = fechaActual.toLocaleString('es-ES', { month: 'long' });
+            const año = fechaActual.getFullYear();
+
+            // DATOS DEL CLIENTE
+            const nombreCompleto = `${clienteDetalle.nombre || ''} ${clienteDetalle.apellido || ''}`.trim();
+            const dui = clienteDetalle.dui || '';
+            const nit = clienteDetalle.nit || '';
+            const direccion = clienteDetalle.direccion || '';
+            const departamento = clienteDetalle.departamentoNombre || '';
+            const edad = clienteDetalle.edad || '';
+            const profesion = clienteDetalle.profesion || 'Comerciante';
+
+            // CREAR DOCUMENTO PDF DEL MANIFIESTO
+            const docDefinition = {
+                pageSize: 'LETTER',
+                pageMargins: [60, 60, 60, 60],
+                defaultStyle: {
+                    fontSize: 12,
+                    lineHeight: 1.5,
+                    alignment: 'justify'
+                },
+                content: [
+                    // Encabezado del manifiesto
+                    {
+                        text: [
+                            'Yo, ',
+                            { text: nombreCompleto, decoration: 'underline' },
+                            ', de ',
+                            { text: edad.toString(), decoration: 'underline' },
+                            ' años de edad, ',
+                            { text: profesion },
+                            ', del domicilio del Distrito de ',
+                            { text: direccion, decoration: 'underline' },
+                            ', Municipio de ',
+                            { text: departamento, decoration: 'underline' },
+                            ', departamento de ',
+                            { text: departamento, decoration: 'underline' },
+                            ', con mi Documento Único de Identidad homologado con mi Número de Identificación Tributaria número ',
+                            { text: nit, decoration: 'underline' },
+                            '; por medio de la presente ',
+                            { text: 'MANIFIESTO:', bold: true }
+                        ],
+                        margin: [0, 0, 0, 30]
+                    },
+
+                    // Cuerpo principal del manifiesto
+                    {
+                        text: [
+                            'Que por éste medio ',
+                            { text: 'AUTORIZO EXPRESAMENTE', bold: true },
+                            ' a La Sociedad ',
+                            { text: 'CREDI EXPRESS DE EL SALVADOR, SOCIEDAD ANÓNIMA DE CAPITAL VARIABLE,', bold: true },
+                            ' que se abrevia ',
+                            { text: '"CREDI EXPRESS DE EL SALVADOR, S.A. DE C.V.",', bold: true },
+                            ' del domicilio de la ciudad y departamento de Sonsonate, hoy Distrito de Sonsonate, Municipio de Sonsonate Centro, departamento de Sonsonate, con Número de Identificación Tributaria cero seiscientos catorce - ciento ochenta mil novecientos quince - ciento dos - cero; para que se hagan a domicilio, las gestiones de cobro de las cuotas de pago de mi crédito, gestión que genera un cargo adicional a la referida cuota, las cuales autorizo que sean cargadas a mi cuota de pago.-'
+                        ],
+                        margin: [0, 0, 0, 30]
+                    },
+
+                    // Lugar y fecha
+                    {
+                        text: [
+                            'En el Distrito de ',
+                            { text: direccion, decoration: 'underline' },
+                            ', Municipio de ',
+                            { text: departamento, decoration: 'underline' },
+                            ', departamento de ',
+                            { text: departamento, decoration: 'underline' },
+                            ', a los ',
+                            { text: dia.toString(), decoration: 'underline' },
+                            ' días del mes de ',
+                            { text: mes, decoration: 'underline' },
+                            ' del año dos mil ',
+                            { text: año.toString().slice(-2), decoration: 'underline' },
+                            '.-'
+                        ],
+                        margin: [0, 0, 0, 80]
+                    },
+
+                    // Espacio para firma
+                    {
+                        text: [
+                            'F.',
+                            { text: '                    ', decoration: 'underline' }
+                        ],
+                        alignment: 'center',
+                        fontSize: 12
+                    }
+                ]
+            };
+
+            // Generar y mostrar PDF
+            pdfMake.createPdf(docDefinition).getDataUrl((dataUrl) => {
+                Swal.close();
+
+                Swal.fire({
+                    title: 'Autorización Generado',
+                    html: `
+                    <div class="mb-3">
+                        <iframe src="${dataUrl}" width="100%" height="400px"></iframe>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-primary" onclick="window.open('${dataUrl}')">
+                            <i class="fas fa-external-link-alt me-1"></i>Abrir en nueva pestaña
+                        </button>
+                    </div>
+                `,
+                    width: '80%',
+                    showConfirmButton: false,
+                    showCloseButton: true
+                });
+            });
+
+        } catch (error) {
+            console.error('Error generando manifiesto:', error);
+            Swal.fire({
+                title: 'Error',
+                text: 'Error al generar el manifiesto PDF: ' + error.message,
+                icon: 'error',
+                confirmButtonColor: '#dc3545'
+            });
+        }
+    }
 });
 
