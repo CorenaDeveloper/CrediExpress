@@ -77,6 +77,139 @@
     </div>
 </div>
 
+<!-- Modal para Editar Solicitud -->
+<div class="modal fade" id="modalEditarSolicitud" tabindex="-1" aria-labelledby="modalEditarSolicitudLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="modalEditarSolicitudLabel">
+                    <i class="fas fa-edit me-2"></i>
+                    Editar Solicitud # <span id="editNumSolicitud">-</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <form id="formEditarSolicitud">
+                    <input type="hidden" id="editIdSolicitud" name="idSolicitud">
+
+                    <!-- Información del Cliente (Solo lectura) -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-user me-2"></i>Cliente: <span id="editNombreCliente">-</span></h6>
+                                <small>Esta información no se puede modificar</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Datos Editables -->
+                    <div class="row">
+                        <!-- Monto -->
+                        <div class="col-md-6 mb-3">
+                            <label for="editMonto" class="form-label fw-bold">
+                                <i class="fas fa-dollar-sign me-1"></i>Monto del Préstamo
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="editMonto" name="monto"
+                                       step="0.01" min="100" max="50000" required>
+                            </div>
+                            <small class="text-muted">Monto entre $100 y $50,000</small>
+                        </div>
+
+                        <!-- Número de Cuotas -->
+                        <div class="col-md-6 mb-3">
+                            <label for="editNumCuotas" class="form-label fw-bold">
+                                <i class="fas fa-list-ol me-1"></i>Número de Cuotas
+                            </label>
+                            <input type="number" class="form-control" id="editNumCuotas" name="numCuotas"
+                                   min="1" max="60" required>
+                            <small class="text-muted">Entre 1 y 60 cuotas</small>
+                        </div>
+
+                        <!-- Tasa de Interés -->
+                        <div class="col-md-6 mb-3">
+                            <label for="editTasa" class="form-label fw-bold">
+                                <i class="fas fa-percentage me-1"></i>Tasa de Interés
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="editTasa" name="tasa"
+                                       step="0.01" min="0.5" max="50" required>
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="text-muted">Tasa entre 0.5% y 50%</small>
+                        </div>
+
+                        <!-- Tasa Domicilio -->
+                        <div class="col-md-6 mb-3">
+                            <label for="editTasaDomicilio" class="form-label fw-bold">
+                                <i class="fas fa-home me-1"></i>Tasa Domicilio
+                            </label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="editTasaDomicilio" name="tasaDomicilio"
+                                       step="0.01" min="0" max="20" required>
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="text-muted">Tasa entre 0% y 20%</small>
+                        </div>
+
+                        <!-- Motivo de Edición -->
+                        <div class="col-12 mb-3">
+                            <label for="editMotivo" class="form-label fw-bold">
+                                <i class="fas fa-comment me-1"></i>Motivo de la Modificación
+                            </label>
+                            <textarea class="form-control" id="editMotivo" name="motivo" rows="3"
+                                      placeholder="Explique por qué está modificando esta solicitud..." required></textarea>
+                            <small class="text-muted">Mínimo 10 caracteres</small>
+                        </div>
+                    </div>
+
+                    <!-- Cálculos en Tiempo Real -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="mb-0"><i class="fas fa-calculator me-2"></i>Cálculos Actualizados</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row text-center">
+                                        <div class="col-md-3">
+                                            <h6 class="text-primary">Interés Total</h6>
+                                            <span id="calcInteres" class="fs-5 fw-bold">$0.00</span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <h6 class="text-info">Domicilio Total</h6>
+                                            <span id="calcDomicilio" class="fs-5 fw-bold">$0.00</span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <h6 class="text-success">Total a Pagar</h6>
+                                            <span id="calcTotal" class="fs-5 fw-bold">$0.00</span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <h6 class="text-warning">Cuota</h6>
+                                            <span id="calcCuota" class="fs-5 fw-bold">$0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-warning" id="btnGuardarCambios">
+                    <i class="fas fa-save me-1"></i>Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal para Detalle de Solicitud -->
 <div class="modal fade" id="modalDetalleSolicitud" tabindex="-1" aria-labelledby="modalDetalleSolicitudLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl-custom">

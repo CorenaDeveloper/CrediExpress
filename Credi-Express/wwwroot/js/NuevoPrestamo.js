@@ -268,40 +268,77 @@ function calcularCuota() {
 
     if (monto > 0 && cuotas > 0) {
         // Determinar días por período según tipo de préstamo
-        let diasPorPeriodo;
+        let baseInteres = 0;
+        let interesxTiempo = 0;
+        let baseDomicilio = 0;
+        let domicilioxTiempo = 0;
+
+    
         switch (tipoPrestamo.toUpperCase()) {
             case 'DIARIO':
-                diasPorPeriodo = 30;
+
+                // Interes aplicado tasa diaria
+                baseInteres = (tasaInteresMensual / 100) / cuotas;
+                interesxTiempo = baseInteres * cuotas;
+
+                // domiciclio aplicado a tasa diaria
+                baseDomicilio = (tasaDomicilio / 100) / cuotas;
+                domicilioxTiempo = baseDomicilio * cuotas; // se divide para sacar el interes por cuota
+
                 break;
             case 'SEMANAL':
-                diasPorPeriodo = 4;
+
+                // Interes mensual equivalente a 4 semanas
+                baseInteres = (tasaInteresMensual / 100) / 4; 
+                interesxTiempo = baseInteres * cuotas;
+
+                // domiciclio mensual equivalente a 4 semanas
+                baseDomicilio = (tasaDomicilio / 100) / 4;
+                domicilioxTiempo = baseDomicilio * cuotas;
+
                 break;
             case 'QUINCENAL':
-                diasPorPeriodo = 2;
+
+                // Interes mensual equivalente a 2 semanas
+                baseInteres = (tasaInteresMensual / 100) / 2;
+                interesxTiempo = baseInteres * cuotas;
+
+                // domiciclio mensual equivalente a 2 semanas
+                baseDomicilio = (tasaDomicilio / 100) / 2;
+                domicilioxTiempo = baseDomicilio * cuotas;
+
                 break;
             case 'MENSUAL':
             default:
-                diasPorPeriodo = 1;
+
+                // Interes mensual
+                baseInteres = (tasaInteresMensual / 100) / 1;
+                interesxTiempo = baseInteres * cuotas;
+
+                // domiciclio 
+                baseDomicilio = (tasaDomicilio / 100) / 1;
+                domicilioxTiempo = baseDomicilio * cuotas;
+
                 break;
         }
 
-        const interes = monto * (tasaInteresMensual / 100) * (cuotas / diasPorPeriodo);
-        const domicilio = monto * (tasaDomicilio / 100) * (cuotas / diasPorPeriodo);
 
-        // Totales
-        const totalAPagar = monto + interes + domicilio;
+        // total a pagar
+        const interesTotal = interesxTiempo * monto;
+        const domicilioTotal = domicilioxTiempo * monto;
+        const totalAPagar = monto + interesTotal + domicilioTotal;
+
         const cuotaFinal = totalAPagar / cuotas;
-
 
         // Actualizar campos ocultos
         $('#txtCuotasMonto').val(cuotaFinal.toFixed(2));
-        $('#txtInteres').val(interes.toFixed(2));
-        $('#txtDomicilio').val(domicilio.toFixed(2));
+        $('#txtInteres').val(interesTotal.toFixed(2));
+        $('#txtDomicilio').val(domicilioTotal.toFixed(2));
 
         // Actualizar calculadora visual
         $('#resumenMonto').text('$' + monto.toFixed(2));
-        $('#resumenInteres').text('$' + interes.toFixed(2));
-        $('#resumenDomicilio').text('$' + domicilio.toFixed(2));
+        $('#resumenInteres').text('$' + interesTotal.toFixed(2));
+        $('#resumenDomicilio').text('$' + domicilioTotal.toFixed(2));
         $('#resumenTotal').text('$' + totalAPagar.toFixed(2));
 
         $('#calculadoraVisual').show();

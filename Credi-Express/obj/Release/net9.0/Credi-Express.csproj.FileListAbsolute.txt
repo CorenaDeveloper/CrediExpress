@@ -1066,10 +1066,8 @@ C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\n
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\compressed\yaqtciig92-nt1brewyoz.gz
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\compressed\hsay29nrci-u4c19ej71e.gz
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\compressed\adr86wf1ir-apozoqj9oh.gz
-C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\compressed\xmeaxs7ma0-k5ajtl5q21.gz
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\compressed\ijf6mhyitt-ge9ilqp8uc.gz
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\compressed\x1jq2kjs58-xtxxf3hu2r.gz
-C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\compressed\zah4y56jo0-wrjtytau2t.gz
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\compressed\iqyhgfgpsw-bqjiyaj88i.gz
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\compressed\om89pvr0uv-c2jlpeoesf.gz
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\compressed\n2bkrcfxx8-erw9l3u2r3.gz
@@ -1146,3 +1144,5 @@ C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\n
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\Credi-Express.pdb
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\Credi-Express.genruntimeconfig.cache
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\ref\Credi-Express.dll
+C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\compressed\zah4y56jo0-ye7bzzpmyn.gz
+C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\obj\Release\net9.0\compressed\xmeaxs7ma0-keswn4o7xg.gz

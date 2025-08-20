@@ -1,5 +1,6 @@
 ﻿using Credi_Express.Models;
 using Credi_Express.ModelVM;
+using Credi_Express.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,7 +43,10 @@ namespace Credi_Express.Controllers
             return Ok(puesto);
         }
 
-
+        /// <summary>
+        /// Lista de gestores(asignados y no asignados a clientes).
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         public IActionResult GetGestores()
         {
@@ -63,6 +67,14 @@ namespace Credi_Express.Controllers
             return Ok(gestores);
         }
 
+        /// <summary>
+        /// consulta prestmoas y solicitudes con filtro
+        /// </summary>
+        /// <param name="estado"></param>
+        /// <param name="fechaInicio"></param>
+        /// <param name="fechaFin"></param>
+        /// <param name="extra"></param>
+        /// <returns></returns>
         [HttpGet]
         public async Task<IActionResult> GetPrestamos(string estado, DateOnly? fechaInicio, DateOnly? fechaFin, string extra)
         {
@@ -112,6 +124,12 @@ namespace Credi_Express.Controllers
             return Ok(a);
         }
 
+
+        /// <summary>
+        /// historial de solicitudes aprobadas y no aprobadas
+        /// </summary>
+        /// <param name="idCliente"></param>
+        /// <returns></returns>
         [HttpGet]
         public async Task<IActionResult> GetPrestamosXCliente(int idCliente)
         {
@@ -253,7 +271,11 @@ namespace Credi_Express.Controllers
             }
         }
 
-
+        /// <summary>
+        ///  historial de prestamos aprobados 
+        /// </summary>
+        /// <param name="idCliente"></param>
+        /// <returns></returns>
         [HttpGet]
         public async Task<IActionResult> GetPrestamosXClienteRealizado(int idCliente)
         {
@@ -395,7 +417,11 @@ namespace Credi_Express.Controllers
             }
         }
 
-        // 🎯 MÉTODO AUXILIAR PARA CALCULAR NIVEL DE RIESGO
+        /// <summary>
+        /// MÉTODO AUXILIAR PARA CALCULAR NIVEL DE RIESGO
+        /// </summary>
+        /// <param name="prestamos"></param>
+        /// <returns></returns>
         private string CalcularNivelRiesgo(IEnumerable<object> prestamos)
         {
             try
@@ -440,119 +466,11 @@ namespace Credi_Express.Controllers
             }
         }
 
-        // 📊 MÉTODO ADICIONAL: OBTENER SOLO PRÉSTAMOS ACTIVOS (para otros usos)
-        [HttpGet("activos")]
-        public async Task<IActionResult> GetPrestamosActivosXCliente(int idCliente)
-        {
-            try
-            {
-                var prestamosActivos = await context.Prestamos
-                    .Where(c => c.Aprobado == 1 && c.Idcliente == idCliente && c.Estado == "A")
-                    .Select(c => new PrestamosVM
-                    {
-                        Id = c.Id,
-                        IdCliente = c.Idcliente,
-                        NombreCliente = context.Clientes
-                            .Where(a => a.Id == c.Idcliente)
-                            .Select(a => a.Nombre + " " + a.Apellido)
-                            .FirstOrDefault(),
-                        fecha = c.Fecha,
-                        Monto = c.Monto,
-                        Tasa = c.Tasa,
-                        NumCoutas = c.NumCoutas,
-                        Cuotas = c.Cuota,
-                        Interes = c.Interes,
-                        ProximoPago = c.ProximoPago,
-                        Estado = c.Estado,
-                        FechaCancelado = c.FechaCancelado
-                    })
-                    .ToListAsync();
-
-                return Ok(new { success = true, data = prestamosActivos });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Error al obtener préstamos activos",
-                    error = ex.Message
-                });
-            }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetSolicitudes(string estado, DateOnly? fechaInicio, DateOnly? fechaFin, string extra)
-        {
-            var gestorId = HttpContext.Session.GetInt32("GestorId");
-            IQueryable<Prestamo> query = context.Prestamos;
-
-            if (estado == "0" || estado == "1")
-            {
-                ulong aprobadoValor = Convert.ToUInt64(estado);
-                query = query.Where(c => c.Aprobado == aprobadoValor);
-            }
-
-            //var userId = HttpContext.Session.GetInt32("UsuarioId");
-            //var gestorId = HttpContext.Session.GetInt32("GestorId");
-
-            //var query = context.Clientes.AsQueryable();
-            ////filtra si el un gestor de cuenta el que realiza la bsuqueda
-            if (gestorId.HasValue && await query.AnyAsync(c => c.CreadaPor == gestorId.Value))
-            {
-                query = query.Where(c => c.CreadaPor == gestorId.Value);
-            }
-
-
-            // Aplicar filtro de fechas solo si se seleccionó una opción válida
-            if (extra == "1" && fechaInicio.HasValue && fechaFin.HasValue)
-            {
-                // Filtrar por fecha del préstamo
-                query = query.Where(c => c.Fecha >= fechaInicio && c.Fecha <= fechaFin);
-            }
-            // extra == "2" → No aplicar ningún filtro por fecha
-
-            var a = await query
-                .Select(c => new PrestamosVM
-                {
-                    Id = c.Id,
-                    IdCliente = c.Idcliente,
-                    NombreCliente = context.Clientes
-                        .Where(a => a.Id == c.Idcliente)
-                        .Select(a => a.Nombre + " " + a.Apellido + " (" + a.Dui + ")")
-                        .FirstOrDefault(),
-                    fecha = c.Fecha,
-                    Monto = c.Monto,
-                    Tasa = c.Tasa,
-                    NumCoutas = c.NumCoutas,
-                    Cuotas = c.Cuota,
-                    Interes = c.Interes,
-                    ProximoPago = c.ProximoPago,
-                    Estado = c.Estado,
-                    FechaCancelado = c.FechaCancelado,
-                    TipoPrestamo = c.TipoPrestamo,
-                    Aprobado = c.Aprobado,
-                    CreadoPor = c.CreadaPor,
-                    FechaCreadaFecha = c.FechaCreadafecha,
-                    TasaDomicilio = c.TasaDomicilio,
-                    Domicilio = c.Domicilio,
-                    DetalleAprobado = c.DetalleAprobado,
-                    Observaciones = c.Observaciones,
-                    DetalleRechazo = c.DetalleRechazo,
-                    NombreCreadoPor = context.Gestors
-                        .Where(a => a.Id == c.CreadaPor)
-                        .Select(a => a.Nombre + " " + a.Apellido)
-                        .FirstOrDefault() ?? "Gestor no asignado",
-                    NombreGestor = context.Gestors
-                        .Where(a => a.Id == c.IdclienteNavigation.Idgestor)
-                        .Select(a => a.Nombre + " " + a.Apellido)
-                        .FirstOrDefault() ?? "Gestor no asignado"
-                })
-                .ToListAsync();
-
-            return Ok(a);
-        }
-
+        /// <summary>
+        /// Detalle de prestamos por id
+        /// </summary>
+        /// <param name="idPrestamo"></param>
+        /// <returns></returns>
         [HttpGet]
         public async Task<IActionResult> GetDetallePrestamos(int idPrestamo)
         {
@@ -578,7 +496,11 @@ namespace Credi_Express.Controllers
         }
 
 
-
+        /// <summary>
+        /// Consultando cliente por DUI
+        /// </summary>
+        /// <param name="dui"></param>
+        /// <returns></returns>
         [HttpGet]
         public async Task<IActionResult> GetClienteDetalle(string dui)
         {
@@ -629,6 +551,10 @@ namespace Credi_Express.Controllers
         }
 
 
+        /// <summary>
+        /// LISTA DE CLIENTE PARA LA TABLA
+        /// </summary>
+        /// <returns></returns>
         [HttpGet]
         public async Task<IActionResult> GetClientesDataTable()
         {
@@ -705,893 +631,12 @@ namespace Credi_Express.Controllers
         }
 
 
-        [HttpPost]
-        public IActionResult EditarCliente([FromForm] Cliente cliente, IFormFile? DuiFrente, IFormFile? DuiDetras, IFormFile? FotoNegocio1, IFormFile? FotoNegocio2, IFormFile? FotoNegocio3, IFormFile? FotoNegocio4)
-        {
-            var exists = context.Clientes.FirstOrDefault(c => c.Id == cliente.Id);
-            if (exists == null)
-            {
-                TempData["Mensaje"] = "El cliente con ese DUI No existe.";
-                TempData["TipoMensaje"] = "danger";
-                return RedirectToAction("Clientes", "Home");
-            }
 
-            try
-            {
-                string GuardarImagen(IFormFile? file)
-                {
-                    if (file == null) return null;
-
-                    var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/clientes");
-                    if (!Directory.Exists(folderPath))
-                        Directory.CreateDirectory(folderPath);
-
-                    var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
-                    var fullPath = Path.Combine(folderPath, fileName);
-
-                    using (var stream = new FileStream(fullPath, FileMode.Create))
-                    {
-                        file.CopyTo(stream);
-                    }
-
-                    return "/uploads/clientes/" + fileName;
-                }
-
-                void EliminarImagen(string? rutaRelativa)
-                {
-                    if (string.IsNullOrWhiteSpace(rutaRelativa)) return;
-
-                    var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", rutaRelativa.TrimStart('/'));
-                    if (System.IO.File.Exists(fullPath))
-                        System.IO.File.Delete(fullPath);
-                }
-
-                // Si llega una nueva imagen, eliminar la vieja y guardar la nueva
-                if (DuiFrente != null)
-                {
-                    EliminarImagen(exists.DuiFrente);
-                    exists.DuiFrente = GuardarImagen(DuiFrente);
-                }
-
-                if (DuiDetras != null)
-                {
-                    EliminarImagen(exists.DuiDetras);
-                    exists.DuiDetras = GuardarImagen(DuiDetras);
-                }
-
-                if (FotoNegocio1 != null)
-                {
-                    EliminarImagen(exists.Fotonegocio1);
-                    exists.Fotonegocio1 = GuardarImagen(FotoNegocio1);
-                }
-
-                if (FotoNegocio2 != null)
-                {
-                    EliminarImagen(exists.Fotonegocio2);
-                    exists.Fotonegocio2 = GuardarImagen(FotoNegocio2);
-                }
-
-                if (FotoNegocio3 != null)
-                {
-                    EliminarImagen(exists.Fotonegocio3);
-                    exists.Fotonegocio3 = GuardarImagen(FotoNegocio3);
-                }
-
-                if (FotoNegocio4 != null)
-                {
-                    EliminarImagen(exists.Fotonegocio4);
-                    exists.Fotonegocio4 = GuardarImagen(FotoNegocio4);
-                }
-
-                // Actualizar datos normales
-                exists.Nombre = cliente.Nombre;
-                exists.Apellido = cliente.Apellido;
-                exists.Dui = cliente.Dui;
-                exists.Nit = cliente.Nit;
-                exists.Telefono = cliente.Telefono;
-                exists.Celular = cliente.Celular;
-                exists.Direccion = cliente.Direccion;
-                exists.FechaNacimiento = cliente.FechaNacimiento;
-                exists.Giro = cliente.Giro;
-                exists.Referencia1 = cliente.Referencia1;
-                exists.Telref1 = cliente.Telref1;
-                exists.Referencia2 = cliente.Referencia2;
-                exists.Telref2 = cliente.Telref2;
-                exists.Departamento = cliente.Departamento;
-                exists.Idgestor = cliente.Idgestor;
-                exists.Sexo = cliente.Sexo;
-                exists.Activo = cliente.Activo;
-                exists.TipoPer = cliente.TipoPer;
-                exists.Latitud = cliente.Latitud;
-                exists.Longitud = cliente.Longitud;
-                exists.Profesion = cliente.Profesion;
-                exists.Email = cliente.Email;
-
-                context.SaveChanges();
-                TempData["Mensaje"] = "Cliente modificado correctamente";
-                TempData["TipoMensaje"] = "success";
-                return RedirectToAction("Clientes", "Home");
-            }
-            catch (Exception ex)
-            {
-                TempData["Mensaje"] = $"Ocurrió un error inesperado: {ex.Message}";
-                TempData["TipoMensaje"] = "danger";
-                return RedirectToAction("Clientes", "Home");
-            }
-        }
-
-
-        [HttpPost]
-        public IActionResult CrearCliente([FromForm] Cliente cliente, IFormFile? DuiFrente, IFormFile? DuiDetras, IFormFile? FotoNegocio1, IFormFile? FotoNegocio2, IFormFile? FotoNegocio3, IFormFile? FotoNegocio4)
-        {
-            try
-            {
-
-                var clienteExistente = context.Clientes.FirstOrDefault(c => c.Dui == cliente.Dui);
-                if (clienteExistente != null)
-                {
-                    TempData["Mensaje"] = "El cliente con ese DUI ya existe.";
-                    TempData["TipoMensaje"] = "warning";
-                    return RedirectToAction("Clientes", "Home");
-                }
-
-                // Guardar imágenes si se enviaron
-                string GuardarImagen(IFormFile? file)
-                {
-                    if (file == null) return null;
-
-                    var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/clientes");
-                    if (!Directory.Exists(folderPath))
-                        Directory.CreateDirectory(folderPath);
-
-                    var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
-                    var fullPath = Path.Combine(folderPath, fileName);
-
-                    using (var stream = new FileStream(fullPath, FileMode.Create))
-                    {
-                        file.CopyTo(stream);
-                    }
-
-                    return "/uploads/clientes/" + fileName; // URL accesible desde el navegador
-                }
-
-                if (DuiFrente != null) cliente.DuiFrente = GuardarImagen(DuiFrente);
-                if (DuiDetras != null) cliente.DuiDetras = GuardarImagen(DuiDetras);
-                if (FotoNegocio1 != null) cliente.Fotonegocio1 = GuardarImagen(FotoNegocio1);
-                if (FotoNegocio2 != null) cliente.Fotonegocio2 = GuardarImagen(FotoNegocio2);
-                if (FotoNegocio3 != null) cliente.Fotonegocio3 = GuardarImagen(FotoNegocio3);
-                if (FotoNegocio4 != null) cliente.Fotonegocio4 = GuardarImagen(FotoNegocio4);
-                cliente.FechaIngreso = DateOnly.FromDateTime(DateTime.Now);
-                cliente.Activo = 1;
-                context.Clientes.Add(cliente);
-                context.SaveChanges();
-
-                TempData["Mensaje"] = "Cliente creado correctamente";
-                TempData["TipoMensaje"] = "success";
-                return RedirectToAction("Clientes", "Home");
-            }
-            catch (Exception ex)
-            {
-                TempData["Mensaje"] = $"Ocurrió un error inesperado, {ex.Message}";
-                TempData["TipoMensaje"] = "danger";
-                return RedirectToAction("Clientes", "Home");
-            }
-        }
-
-        [HttpPost]
-        public IActionResult EliminarCliente(int id)
-        {
-            var cliente = context.Clientes.FirstOrDefault(c => c.Id == id);
-            if (cliente == null)
-                return NotFound("Cliente no encontrado");
-
-            try
-            {
-                // Función para borrar una imagen física si existe
-                void EliminarImagen(string? rutaRelativa)
-                {
-                    if (string.IsNullOrWhiteSpace(rutaRelativa)) return;
-
-                    var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", rutaRelativa.TrimStart('/'));
-                    if (System.IO.File.Exists(fullPath))
-                    {
-                        System.IO.File.Delete(fullPath);
-                    }
-                }
-
-                // Eliminar fotos físicas del cliente
-                EliminarImagen(cliente.DuiFrente);
-                EliminarImagen(cliente.DuiDetras);
-                EliminarImagen(cliente.Fotonegocio1);
-                EliminarImagen(cliente.Fotonegocio2);
-                EliminarImagen(cliente.Fotonegocio3);
-                EliminarImagen(cliente.Fotonegocio4);
-
-                // Eliminar cliente de la base de datos
-                context.Clientes.Remove(cliente);
-                context.SaveChanges();
-
-                TempData["Mensaje"] = "Cliente eliminado correctamente";
-                TempData["TipoMensaje"] = "success";
-            }
-            catch (DbUpdateException ex)
-            {
-                if (ex.InnerException != null && ex.InnerException.Message.Contains("REFERENCE"))
-                {
-                    TempData["Mensaje"] = "No se puede eliminar el cliente porque tiene préstamos asociados.";
-                }
-                else
-                {
-                    TempData["Mensaje"] = $"Ocurrió un error inesperado: {ex.Message}";
-                }
-                TempData["TipoMensaje"] = "danger";
-            }
-            catch (Exception ex)
-            {
-                TempData["Mensaje"] = $"Error inesperado: {ex.Message}";
-                TempData["TipoMensaje"] = "danger";
-            }
-
-            return RedirectToAction("Clientes", "Home");
-        }
-
-
-
-        [HttpPost]
-        public IActionResult CrearColaborador([FromForm] Gestor user)
-        {
-            try
-            {
-
-                user.Activo = 1;
-                context.Gestors.Add(user);
-                context.SaveChanges();
-
-                TempData["Mensaje"] = "Colaborador creado correctamente";
-                TempData["TipoMensaje"] = "success";
-                return RedirectToAction("Colaboradores", "Home");
-            }
-            catch (Exception ex)
-            {
-                TempData["Mensaje"] = $"Ocurrió un error inesperado, {ex.Message}";
-                TempData["TipoMensaje"] = "danger";
-                return RedirectToAction("Colaboradores", "Home");
-            }
-        }
-
-        [HttpPost]
-        public IActionResult EdiarColaborador([FromForm] Gestor user)
-        {
-            var exists = context.Gestors.FirstOrDefault(c => c.Id == user.Id);
-            if (exists == null)
-            {
-                TempData["Mensaje"] = "Colaborador no encontrado";
-                TempData["TipoMensaje"] = "danger";
-                return RedirectToAction("Colaboradores", "Home");
-            }
-
-            try
-            {
-                exists.Nombre = user.Nombre;
-                exists.Apellido = user.Apellido;
-                exists.Telefono = user.Telefono;
-                exists.Direccion = user.Direccion;
-                exists.Departamento = user.Departamento;
-                exists.Activo = user.Activo;
-                exists.Idpuesto = user.Idpuesto;
-
-                context.SaveChanges();
-                TempData["Mensaje"] = "Colaborador modificado correctamente";
-                TempData["TipoMensaje"] = "success";
-                return RedirectToAction("Colaboradores", "Home");
-            }
-            catch (Exception ex)
-            {
-                TempData["Mensaje"] = $"Ocurrió un error inesperado: {ex.Message}";
-                TempData["TipoMensaje"] = "danger";
-                return RedirectToAction("Colaboradores", "Home");
-            }
-        }
-
-
-        [HttpPost]
-        public IActionResult EliminarColaborador(int id)
-        {
-            var exists = context.Gestors.FirstOrDefault(c => c.Id == id);
-            if (exists == null)
-            {
-                TempData["Mensaje"] = "Colaborador no encontrado";
-                TempData["TipoMensaje"] = "danger";
-                return RedirectToAction("Colaboradores", "Home");
-            }
-
-            var cliente = context.Clientes.Any(c => c.Idgestor == id);
-            if (cliente)
-            {
-                TempData["Mensaje"] = "Colaborador no se puede eliminar, tiene Clientes Asignados";
-                TempData["TipoMensaje"] = "danger";
-                return RedirectToAction("Colaboradores", "Home");
-            }
-
-            try
-            {
-                var user = context.Logins.FirstOrDefault(l => l.Id == exists.Idusuario);
-                if (user != null)
-                {
-                    // Eliminar el usuario asociado al colaborador
-                    context.Logins.Remove(user);
-                    context.SaveChanges();
-                }
-
-                // Eliminar cliente de la base de datos
-                context.Gestors.Remove(exists);
-                context.SaveChanges();
-
-                TempData["Mensaje"] = "Colaborador eliminado correctamente";
-                TempData["TipoMensaje"] = "success";
-            }
-            catch (DbUpdateException ex)
-            {
-                if (ex.InnerException != null && ex.InnerException.Message.Contains("REFERENCE"))
-                {
-                    TempData["Mensaje"] = "No se puede eliminar colaborador por que tiene datos asociados.";
-                }
-                else
-                {
-                    TempData["Mensaje"] = $"Ocurrió un error inesperado: {ex.Message}";
-                }
-                TempData["TipoMensaje"] = "danger";
-            }
-            catch (Exception ex)
-            {
-                TempData["Mensaje"] = $"Error inesperado: {ex.Message}";
-                TempData["TipoMensaje"] = "danger";
-            }
-
-            return RedirectToAction("Colaboradores", "Home");
-        }
-
-        [HttpPost]
-        public IActionResult CrudLogin([FromForm] Login log, [FromForm] int IdColaborador)
-        {
-            try
-            {
-                var colaborador = context.Gestors.FirstOrDefault(l => l.Id == IdColaborador);
-
-                if (colaborador == null)
-                {
-                    TempData["Mensaje"] = "Colaborador no encontrado";
-                    TempData["TipoMensaje"] = "danger";
-                    return RedirectToAction("Colaboradores", "Home");
-                }
-
-                // Validar que el nombre de usuario no exista para otro login
-                var usuarioExistente = context.Logins
-                    .FirstOrDefault(l => l.Usuario == log.Usuario && l.Id != colaborador.Idusuario);
-
-                if (usuarioExistente != null)
-                {
-                    TempData["Mensaje"] = "El nombre de usuario ya está en uso.";
-                    TempData["TipoMensaje"] = "danger";
-                    return RedirectToAction("Colaboradores", "Home");
-                }
-
-                var usuario = context.Logins.FirstOrDefault(l => l.Id == colaborador.Idusuario);
-                if (usuario != null)
-                {
-                    // Actualizar usuario existente
-                    usuario.Usuario = log.Usuario;
-                    usuario.Password = log.Password;
-                    usuario.Activo = 1;
-                }
-                else
-                {
-                    log.Activo = 1;
-                    context.Logins.Add(log);
-                    context.SaveChanges();
-                    colaborador.Idusuario = log.Id;
-                }
-                context.SaveChanges();
-
-                TempData["Mensaje"] = "Usuario actualizado correctamente";
-                TempData["TipoMensaje"] = "success";
-                return RedirectToAction("Colaboradores", "Home");
-            }
-            catch (Exception ex)
-            {
-                TempData["Mensaje"] = $"Error inesperado: {ex.Message}";
-                TempData["TipoMensaje"] = "danger";
-            }
-
-            return RedirectToAction("Colaboradores", "Home");
-        }
-
-
-
-        [HttpPost]
-        public IActionResult CrearFechaFeriada([FromForm] Calendario cl)
-        {
-            try
-            {
-                context.Calendarios.Add(cl);
-                context.SaveChanges();
-
-                TempData["Mensaje"] = "Fecha creada correctamente";
-                TempData["TipoMensaje"] = "success";
-                return RedirectToAction("Calendario", "Home");
-            }
-            catch (Exception ex)
-            {
-                TempData["Mensaje"] = $"Ocurrió un error inesperado, {ex.Message}";
-                TempData["TipoMensaje"] = "danger";
-                return RedirectToAction("Calendario", "Home");
-            }
-        }
-
-        [HttpPost]
-        public IActionResult EdiarCalendarioFeriado([FromForm] Calendario cl)
-        {
-            var exists = context.Calendarios.FirstOrDefault(c => c.Idcalendario == cl.Idcalendario);
-            if (exists == null)
-            {
-                TempData["Mensaje"] = "Fecha no encontrada";
-                TempData["TipoMensaje"] = "danger";
-                return RedirectToAction("Calendario", "Home");
-            }
-
-            try
-            {
-                exists.Fecha = cl.Fecha;
-                exists.Descripcion = cl.Descripcion;
-
-                context.SaveChanges();
-                TempData["Mensaje"] = "Calendario modificado correctamente";
-                TempData["TipoMensaje"] = "success";
-                return RedirectToAction("Calendario", "Home");
-            }
-            catch (Exception ex)
-            {
-                TempData["Mensaje"] = $"Ocurrió un error inesperado: {ex.Message}";
-                TempData["TipoMensaje"] = "danger";
-                return RedirectToAction("Calendario", "Home");
-            }
-        }
-
-
-        [HttpPost]
-        public IActionResult EliminarCalendarioFeriado(int id)
-        {
-            var exists = context.Calendarios.FirstOrDefault(c => c.Idcalendario == id);
-            if (exists == null)
-            {
-                TempData["Mensaje"] = "Fecha no encontrada";
-                TempData["TipoMensaje"] = "danger";
-                return RedirectToAction("Calendario", "Home");
-            }
-            try
-            {
-                // Eliminar cliente de la base de datos
-                context.Calendarios.Remove(exists);
-                context.SaveChanges();
-
-                TempData["Mensaje"] = "Fecha eliminado correctamente";
-                TempData["TipoMensaje"] = "success";
-            }
-            catch (DbUpdateException ex)
-            {
-                TempData["Mensaje"] = $"Ocurrió un error inesperado: {ex.Message}";
-                TempData["TipoMensaje"] = "danger";
-            }
-            catch (Exception ex)
-            {
-                TempData["Mensaje"] = $"Error inesperado: {ex.Message}";
-                TempData["TipoMensaje"] = "danger";
-            }
-
-            return RedirectToAction("Calendario", "Home");
-        }
-
-
-        [HttpPost]
-        public IActionResult CrearSolicitud([FromForm] Prestamo p)
-        {
-            try
-            {
-
-                var clienteExistente = context.Clientes.FirstOrDefault(c => c.Id == p.Idcliente);
-                if (clienteExistente == null)
-                {
-                    TempData["Mensaje"] = "El Cliente no existe.";
-                    TempData["TipoMensaje"] = "danger";
-                    return RedirectToAction("NuevoPrestamo", "Home");
-                }
-
-                var userId = HttpContext.Session.GetInt32("UsuarioId");
-                p.CreadaPor = userId;
-                p.Aprobado = 0;
-                p.Estado = "P";
-                p.DetalleAprobado = "EN PROCESO";
-                p.FechaCreadafecha = DateOnly.FromDateTime(DateTime.Now);
-
-
-                context.Prestamos.Add(p);
-                context.SaveChanges();
-
-                TempData["Mensaje"] = "Solicitud de prestamo creada correctamente";
-                TempData["TipoMensaje"] = "success";
-                return RedirectToAction("NuevoPrestamo", "Home");
-            }
-            catch (Exception ex)
-            {
-                TempData["Mensaje"] = $"Ocurrió un error inesperado, {ex.Message}";
-                TempData["TipoMensaje"] = "danger";
-                return RedirectToAction("NuevoPrestamo", "Home");
-            }
-        }
-
-        [HttpPost]
-        public IActionResult RechazarSolicitud([FromForm] int numeroSolicitud, [FromForm] string motivoRechazo)
-        {
-            try
-            {
-                // Validar que la solicitud existe
-                var solicitud = context.Prestamos.FirstOrDefault(p => p.Id == numeroSolicitud);
-                if (solicitud == null)
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "La solicitud no existe."
-                    });
-                }
-
-                // Validar que la solicitud no esté ya aprobada
-                if (solicitud.Aprobado == 1)
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "No se puede rechazar una solicitud ya aprobada."
-                    });
-                }
-
-                // Validar que el motivo no esté vacío
-                if (string.IsNullOrWhiteSpace(motivoRechazo))
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "Debe proporcionar un motivo para el rechazo."
-                    });
-                }
-
-                // Validar longitud mínima del motivo
-                if (motivoRechazo.Trim().Length < 10)
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "El motivo del rechazo debe tener al menos 10 caracteres."
-                    });
-                }
-
-                // Obtener el ID del usuario que está rechazando
-                var userId = HttpContext.Session.GetInt32("UsuarioId");
-
-                // Actualizar la solicitud con los datos de rechazo
-                solicitud.Aprobado = 0; // Mantener como no aprobado
-                solicitud.DetalleAprobado = "RECHAZADO"; // Marcar como rechazado
-                solicitud.DetalleRechazo = motivoRechazo.Trim(); // Guardar motivo del rechazo
-                solicitud.Estado = "R"; // Cambiar estado a Rechazado (puedes usar la letra que prefieras)
-
-                // Opcional: Agregar campos de auditoría si los tienes
-                solicitud.FechaRechazado = DateOnly.FromDateTime(DateTime.Now);
-                solicitud.RechazadoPor = userId;
-
-                // Guardar cambios en la base de datos
-                context.SaveChanges();
-
-                // Respuesta exitosa
-                return Json(new
-                {
-                    success = true,
-                    message = "La solicitud ha sido rechazada exitosamente.",
-                    data = new
-                    {
-                        numeroSolicitud = numeroSolicitud,
-                        motivoRechazo = motivoRechazo,
-                        fechaRechazo = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
-                        estadoNuevo = "RECHAZADO"
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                // Log del error para debugging
-                // _logger.LogError(ex, "Error al rechazar solicitud {SolicitudId}", numeroSolicitud);
-
-                return Json(new
-                {
-                    success = false,
-                    message = $"Ocurrió un error inesperado al rechazar la solicitud: {ex.Message}"
-                });
-            }
-        }
-
-        [HttpPost]
-        public IActionResult AprobarSolicitud([FromForm] int numeroSolicitud, [FromForm] string observaciones)
-        {
-            try
-            {
-                // Validar que la solicitud existe
-                var solicitud = context.Prestamos.FirstOrDefault(p => p.Id == numeroSolicitud);
-                if (solicitud == null)
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "La solicitud no existe."
-                    });
-                }
-
-                // Validar que la solicitud no esté ya aprobada
-                if (solicitud.Aprobado == 1)
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "La solicitud ya está aprobada."
-                    });
-                }
-
-                // Validar que las observaciones no estén vacías
-                if (string.IsNullOrWhiteSpace(observaciones))
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "Debe proporcionar observaciones para la aprobación."
-                    });
-                }
-
-                // Obtener el ID del usuario que está aprobando
-                var userId = HttpContext.Session.GetInt32("UsuarioId");
-
-                // Actualizar la solicitud con los datos de aprobación
-                solicitud.Aprobado = 1; // Marcar como aprobado
-                solicitud.DetalleAprobado = "APROBADO"; // Marcar como aprobado
-                solicitud.Observaciones = observaciones.Trim(); // Guardar observaciones
-                solicitud.Estado = "A"; // Cambiar estado a Aprobado
-                solicitud.DetalleRechazo = null; // Limpiar cualquier rechazo previo
-
-                // Opcional: Agregar campos de auditoría si los tienes
-                solicitud.FechaAprobacion = DateOnly.FromDateTime(DateTime.Now);
-                solicitud.AprobadoPor = userId;
-
-                // Guardar cambios en la base de datos
-                context.SaveChanges();
-
-                // Opcional: Crear los registros de pagos detalle aquí si es necesario
-                // CrearDetallesPago(solicitud);
-
-                // Respuesta exitosa
-                return Json(new
-                {
-                    success = true,
-                    message = "La solicitud ha sido aprobada exitosamente.",
-                    data = new
-                    {
-                        numeroSolicitud = numeroSolicitud,
-                        observaciones = observaciones,
-                        fechaAprobacion = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
-                        estadoNuevo = "APROBADO"
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                // Log del error para debugging
-                // _logger.LogError(ex, "Error al aprobar solicitud {SolicitudId}", numeroSolicitud);
-
-                return Json(new
-                {
-                    success = false,
-                    message = $"Ocurrió un error inesperado al aprobar la solicitud: {ex.Message}"
-                });
-            }
-        }
-
-        // ==================== MÉTODO REENVÍO SOLICITUD ====================
-        [HttpPost]
-        public IActionResult ReenvioSolicitud([FromForm] int numeroSolicitud, [FromForm] string comentarioReenvio)
-        {
-            try
-            {
-                // Validar que la solicitud existe
-                var solicitud = context.Prestamos.FirstOrDefault(p => p.Id == numeroSolicitud);
-                if (solicitud == null)
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "La solicitud no existe."
-                    });
-                }
-
-                // Validar que la solicitud esté previamente rechazada
-                if (solicitud.DetalleAprobado != "RECHAZADO")
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "Solo se pueden reenviar solicitudes que hayan sido rechazadas previamente."
-                    });
-                }
-
-                // Validar que el comentario no esté vacío
-                if (string.IsNullOrWhiteSpace(comentarioReenvio))
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "Debe proporcionar un comentario para el reenvío."
-                    });
-                }
-
-                // Validar longitud mínima del comentario
-                if (comentarioReenvio.Trim().Length < 10)
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "El comentario del reenvío debe tener al menos 10 caracteres."
-                    });
-                }
-
-                // Obtener el ID del usuario que está reenviando
-                var userId = HttpContext.Session.GetInt32("UsuarioId");
-
-                // Unir el motivo de rechazo anterior con el nuevo comentario
-                var motivoRechazoAnterior = solicitud.DetalleRechazo ?? "";
-                var nuevoDetalleRechazo = $"{motivoRechazoAnterior}\n\n--- REENVÍO ---\nFecha: {DateTime.Now:dd/MM/yyyy HH:mm}\nComentario: {comentarioReenvio.Trim()}";
-
-                // Actualizar la solicitud para reenvío
-                solicitud.Aprobado = 0; // Mantener como no aprobado
-                solicitud.DetalleAprobado = "EN PROCESO"; // Cambiar estado a EN PROCESO para nueva evaluación
-                solicitud.DetalleRechazo = nuevoDetalleRechazo; // Conservar historial + nuevo comentario
-                solicitud.Estado = "P"; // Cambiar estado a Pendiente
-
-                // Opcional: Agregar campos de auditoría si los tienes
-                solicitud.FechaReenvio = DateOnly.FromDateTime(DateTime.Now);
-                solicitud.ReenviadoPor = userId;
-
-                // Limpiar campos de rechazo previo pero conservar en DetalleRechazo
-                solicitud.FechaRechazado = null;
-                solicitud.RechazadoPor = null;
-
-                // Guardar cambios en la base de datos
-                context.SaveChanges();
-
-                // Respuesta exitosa
-                return Json(new
-                {
-                    success = true,
-                    message = "La solicitud ha sido reenviada exitosamente para nueva evaluación.",
-                    data = new
-                    {
-                        numeroSolicitud = numeroSolicitud,
-                        comentarioReenvio = comentarioReenvio,
-                        fechaReenvio = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
-                        estadoNuevo = "EN PROCESO",
-                        historialCompleto = nuevoDetalleRechazo
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                // Log del error para debugging
-                // _logger.LogError(ex, "Error al reenviar solicitud {SolicitudId}", numeroSolicitud);
-
-                return Json(new
-                {
-                    success = false,
-                    message = $"Ocurrió un error inesperado al reenviar la solicitud: {ex.Message}"
-                });
-            }
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> RegistrarMovimiento([FromForm] Pagosdetalle p)
-        {
-            try
-            {
-                // Verificar que el préstamo existe
-                var prestamo = await context.Prestamos.FirstOrDefaultAsync(c => c.Id == p.Idprestamo);
-                if (prestamo == null)
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = $"No se encontró el préstamo en sistema"
-                    });
-                }
-
-                // Verificar que el préstamo está aprobado y desembolsado
-                if (prestamo.Aprobado != 1 || prestamo.DetalleAprobado != "DESEMBOLSADO")
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = $"El préstamo debe estar aprobado y desembolsado para registrar pagos"
-                    });
-                }
-
-                // Obtener el ID del usuario actual
-                var usuarioId = HttpContext.Session.GetInt32("UsuarioId") ?? 1;
-
-                // Configurar el registro de pago
-                p.CreadoPor = usuarioId;
-                p.FechaPago = DateOnly.FromDateTime(DateTime.Now);
-                p.Pagado = 1; // Marcar como pagado
-                p.TipoPago = p.TipoPago ?? "EFECTIVO"; // Valor por defecto
-
-                // Si no se especifica el número de pago, calcularlo automáticamente
-                if (p.Numeropago == null || p.Numeropago == 0)
-                {
-                    var ultimoPago = await context.Pagosdetalles
-                        .Where(pd => pd.Idprestamo == p.Idprestamo && pd.Numeropago > 0)
-                        .OrderByDescending(pd => pd.Numeropago)
-                        .FirstOrDefaultAsync();
-
-                    p.Numeropago = (ultimoPago?.Numeropago ?? 0) + 1;
-                }
-
-                // Agregar el registro
-                context.Pagosdetalles.Add(p);
-
-                // Verificar si el préstamo está completamente pagado
-                var totalCapitalPagado = await context.Pagosdetalles
-                    .Where(pd => pd.Idprestamo == p.Idprestamo && pd.Pagado == 1 && pd.Numeropago > 0)
-                    .SumAsync(pd => pd.Capital ?? 0);
-
-                totalCapitalPagado += (p.Capital ?? 0);
-
-                // Si se ha pagado todo el capital, marcar como cancelado
-                if (totalCapitalPagado >= prestamo.Monto)
-                {
-                    prestamo.Estado = "C"; // Cancelado
-                    prestamo.FechaCancelado = DateOnly.FromDateTime(DateTime.Now);
-                }
-
-                await context.SaveChangesAsync();
-
-                return Json(new
-                {
-                    success = true,
-                    message = "El pago se ha realizado con éxito.",
-                    data = new
-                    {
-                        NumeroPago = p.Id,
-                        NumeroCuota = p.Numeropago,
-                        Monto = p.Monto,
-                        EstadoPrestamo = prestamo.Estado == "C" ? "CANCELADO" : "ACTIVO",
-                        FechaPago = DateTime.Now.ToString("dd/MM/yyyy HH:mm")
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "Error interno del servidor",
-                    error = ex.Message
-                });
-            }
-        }
-
-        // Agregar estos métodos al AuxiliarController existente
-
+        /// <summary>
+        /// Agregar estos métodos al AuxiliarController existente
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet]
         public async Task<IActionResult> GetSolicitudParaDesembolso(int id)
         {
@@ -1626,161 +671,6 @@ namespace Credi_Express.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> ProcesarDesembolso([FromForm] int numeroSolicitud, [FromForm] string observaciones)
-        {
-            try
-            {
-                var solicitud = await context.Prestamos
-                    .FirstOrDefaultAsync(p => p.Id == numeroSolicitud && p.Aprobado == 1 && p.DetalleAprobado == "APROBADO");
-
-                if (solicitud == null)
-                {
-                    return Json(new { success = false, message = "Solicitud no encontrada o no está disponible para desembolso" });
-                }
-
-                var userId = HttpContext.Session.GetInt32("UsuarioId") ?? 1;
-                var gestor = await context.Gestors
-                    .FirstOrDefaultAsync(g => g.Idusuario == userId);
-                // Cambiar estado a DESEMBOLSADO
-                solicitud.DetalleAprobado = "DESEMBOLSADO";
-                solicitud.Estado = "A"; // Activo
-                solicitud.Observaciones = observaciones;
-
-                // Crear registro de movimiento de desembolso
-                var movimientoDesembolso = new Pagosdetalle
-                {
-                    Idprestamo = solicitud.Id,
-                    FechaPago = DateOnly.FromDateTime(DateTime.Now),
-                    Numeropago = 0, // Para desembolsos usamos 0
-                    Monto = solicitud.Monto,
-                    Pagado = 1,
-                    FechaCouta = DateOnly.FromDateTime(DateTime.Now),
-                    Capital = solicitud.Monto,
-                    Interes = 0,
-                    Mora = 0,
-                    TipoMovimiento = "DESEMBOLSO",
-                    CreadoPor = gestor?.Id ?? 0
-                };
-
-                context.Pagosdetalles.Add(movimientoDesembolso);
-                await context.SaveChangesAsync();
-
-                return Json(new
-                {
-                    success = true,
-                    message = "Desembolso procesado exitosamente",
-                    data = new
-                    {
-                        numeroSolicitud = numeroSolicitud,
-                        monto = solicitud.Monto,
-                        fecha = DateTime.Now.ToString("dd/MM/yyyy HH:mm")
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = $"Error al procesar desembolso: {ex.Message}" });
-            }
-        }
-
-        // ===== MÉTODO ACTUALIZADO REGISTRAR COBRO =====
-        [HttpPost]
-        public async Task<IActionResult> RegistrarCobro([FromForm] int idPrestamo, [FromForm] int idCliente,
-            [FromForm] string concepto, [FromForm] decimal montoCapital, [FromForm] decimal montoInteres,
-            [FromForm] decimal montoMora, [FromForm] decimal montoTotal, [FromForm] int numeroCuota,
-            [FromForm] string metodoPago, [FromForm] string observaciones)
-        {
-            try
-            {
-                // Verificar que el préstamo existe y está activo
-                var prestamo = await context.Prestamos
-                    .FirstOrDefaultAsync(p => p.Id == idPrestamo && p.Aprobado == 1);
-                if (prestamo == null)
-                {
-                    return Json(new { success = false, message = "Préstamo no encontrado o no está activo" });
-                }
-
-                // Verificar que no se haya registrado ya esta cuota
-                var cuotaExistente = await context.Pagosdetalles
-                    .FirstOrDefaultAsync(p => p.Idprestamo == idPrestamo &&
-                                            p.Numeropago == numeroCuota &&
-                                            p.Pagado == 1);
-                if (cuotaExistente != null)
-                {
-                    return Json(new { success = false, message = $"La cuota #{numeroCuota} ya fue pagada anteriormente" });
-                }
-
-                var userId = HttpContext.Session.GetInt32("UsuarioId") ?? 1;
-                var gestor = await context.Gestors
-                    .FirstOrDefaultAsync(g => g.Idusuario == userId);
-                // 🗓️ CALCULAR LA FECHA DE LA CUOTA BASADA EN EL TIPO DE PRÉSTAMO
-                var fechaCuota = await ObtenerProximaFechaCuota(idPrestamo);
-
-                // Crear registro de cobro
-                var cobro = new Pagosdetalle
-                {
-                    Idprestamo = idPrestamo,
-                    FechaPago = DateOnly.FromDateTime(DateTime.Now), // Fecha real del pago
-                    Numeropago = numeroCuota,
-                    Monto = montoTotal,
-                    Pagado = 1,
-                    FechaCouta = fechaCuota, // 🗓️ Fecha calculada según tipo de préstamo
-                    Capital = montoCapital,
-                    Interes = montoInteres,
-                    Mora = montoMora,
-                    TipoPago = metodoPago,
-                    CreadoPor = gestor?.Id ?? 0,
-                };
-
-                context.Pagosdetalles.Add(cobro);
-
-                // 📅 ACTUALIZAR LA PRÓXIMA FECHA DE PAGO EN EL PRÉSTAMO
-                var siguienteFechaPago = await CalcularProximaFechaPago(
-                    idPrestamo,
-                    prestamo.TipoPrestamo,
-                    fechaCuota,
-                    numeroCuota + 1
-                );
-
-                prestamo.ProximoPago = siguienteFechaPago;
-
-                // Verificar si el préstamo está completamente pagado
-                var totalPagado = await context.Pagosdetalles
-                    .Where(p => p.Idprestamo == idPrestamo && p.Pagado == 1 && p.Numeropago > 0)
-                    .SumAsync(p => p.Capital ?? 0);
-
-                string estadoPrestamo = "ACTIVO";
-                if (totalPagado + montoCapital >= prestamo.Monto)
-                {
-                    prestamo.Estado = "C"; // Cancelado
-                    prestamo.FechaCancelado = DateOnly.FromDateTime(DateTime.Now);
-                    prestamo.ProximoPago = null; // Ya no hay próximo pago
-                    estadoPrestamo = "CANCELADO";
-                }
-
-                await context.SaveChangesAsync();
-
-                return Json(new
-                {
-                    success = true,
-                    message = "Cobro registrado exitosamente",
-                    data = new
-                    {
-                        idCobro = cobro.Id,
-                        monto = montoTotal,
-                        fecha = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
-                        estadoPrestamo = estadoPrestamo,
-                        proximaFechaPago = prestamo.ProximoPago?.ToString("dd/MM/yyyy"),
-                        fechaCuotaCalculada = fechaCuota.ToString("dd/MM/yyyy")
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = $"Error al registrar cobro: {ex.Message}" });
-            }
-        }
 
 
         /// <summary>
@@ -2356,193 +1246,7 @@ namespace Credi_Express.Controllers
             return 0; // Pagó a tiempo o antes
         }
 
-        // =====================================================
-        // NUEVO MÉTODO: Obtener préstamos con calendario real
-        // =====================================================
 
-        /// <summary>
-        /// Método para validar el corte de caja y actualizar el estado CorteCaja a true
-        /// </summary>
-        /// <param name="fechaCorte">Fecha del corte a validar</param>
-        /// <param name="idGestor">ID del gestor (opcional, si se quiere validar por gestor específico)</param>
-        /// <returns></returns>
-        [HttpPost]
-        public async Task<IActionResult> ValidarCorteCaja(DateOnly fechaCorte, int? idGestor = null)
-        {
-            try
-            {
-                // Obtener el usuario actual de la sesión
-                var userId = HttpContext.Session.GetInt32("UsuarioId");
-                if (userId == null)
-                {
-                    return Json(new { success = false, message = "Usuario no autenticado" });
-                }
-
-                // Buscar todos los movimientos del día que no han sido validados
-                var movimientosQuery = context.Pagosdetalles
-                    .Where(d => d.FechaPago.HasValue &&
-                               d.FechaPago == fechaCorte &&
-                               d.Pagado == 1 &&
-                               (d.CorteCaja == null || d.CorteCaja == 0));
-
-                // Si se especifica un gestor, filtrar por él
-                if (idGestor.HasValue)
-                {
-                    movimientosQuery = movimientosQuery.Where(d => d.CreadoPor == idGestor.Value);
-                }
-
-                var movimientos = await movimientosQuery.ToListAsync();
-
-                if (!movimientos.Any())
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = "No se encontraron movimientos pendientes de validación para la fecha especificada"
-                    });
-                }
-
-                // Calcular totales antes de la validación
-                var totalIngresos = movimientos.Where(m => m.TipoMovimiento == "PAGO").Sum(m => m.Monto ?? 0);
-                var totalEgresos = movimientos.Where(m => m.TipoMovimiento == "DESEMBOLSO").Sum(m => m.Monto ?? 0);
-                var balanceNeto = totalIngresos - totalEgresos;
-
-                // Actualizar el estado CorteCaja a true para todos los movimientos
-                foreach (var movimiento in movimientos)
-                {
-                    movimiento.CorteCaja = 1;
-                }
-
-                // Guardar los cambios
-                await context.SaveChangesAsync();
-
-                // Obtener información del gestor para la respuesta
-                var gestorInfo = "";
-                if (idGestor.HasValue)
-                {
-                    var gestor = await context.Gestors.FindAsync(idGestor.Value);
-                    gestorInfo = gestor != null ? $" del gestor {gestor.Nombre} {gestor.Apellido}" : "";
-                }
-
-                return Json(new
-                {
-                    success = true,
-                    message = $"Corte de caja validado exitosamente{gestorInfo}",
-                    data = new
-                    {
-                        fechaCorte = fechaCorte,
-                        movimientosValidados = movimientos.Count,
-                        totalIngresos = totalIngresos,
-                        totalEgresos = totalEgresos,
-                        balanceNeto = balanceNeto,
-                        validadoPor = userId,
-                        fechaValidacion = DateTime.Now
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                return Json(new
-                {
-                    success = false,
-                    message = "Error al validar el corte de caja",
-                    error = ex.Message
-                });
-            }
-        }
-
-        public class ValidarCorteRequest
-        {
-            public DateOnly FechaCorte { get; set; }
-            public int IdGestor { get; set; }
-        }
-        /// <summary>
-        /// Método para validar el corte de caja de un gestor específico
-        /// </summary>
-        /// <param name="fechaCorte">Fecha del corte</param>
-        /// <param name="idGestor">ID del gestor</param>
-        /// <returns></returns>
-        [HttpPost]
-        public async Task<IActionResult> ValidarCorteGestor([FromBody] ValidarCorteRequest request)
-        {
-            try
-            {
-                Console.WriteLine($"Validando corte de caja para el gestor {request.IdGestor} en la fecha {request.FechaCorte}");
-                var userId = HttpContext.Session.GetInt32("UsuarioId");
-                if (userId == null)
-                {
-                    return Json(new { success = false, message = "Usuario no autenticado" });
-                }
-
-                // Verificar que el gestor existe
-                var gestor = await context.Gestors.FindAsync(request.IdGestor);
-                if (gestor == null)
-                {
-                    return Json(new { success = false, message = "Gestor no encontrado" });
-                }
-
-                // Buscar movimientos del gestor en la fecha especificada
-                var movimientos = await context.Pagosdetalles
-                    .Where(d => d.FechaPago.HasValue &&
-                               d.FechaPago == request.FechaCorte &&
-                               d.Pagado == 1 &&
-                               d.CreadoPor == request.IdGestor &&
-                               (d.CorteCaja == null || d.CorteCaja == 0))
-                    .ToListAsync();
-
-                if (!movimientos.Any())
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = $"No se encontraron movimientos pendientes de validación para el gestor {gestor.Nombre} {gestor.Apellido}"
-                    });
-                }
-
-                // Calcular totales del gestor
-                var totalIngresos = movimientos.Where(m => m.TipoMovimiento == "PAGO").Sum(m => m.Monto ?? 0);
-                var totalEgresos = movimientos.Where(m => m.TipoMovimiento == "DESEMBOLSO").Sum(m => m.Monto ?? 0);
-                var balanceNeto = totalIngresos - totalEgresos;
-
-                // Actualizar el estado CorteCaja a true
-                foreach (var movimiento in movimientos)
-                {
-                    movimiento.CorteCaja = 1;
-                }
-
-                await context.SaveChangesAsync();
-
-                return Json(new
-                {
-                    success = true,
-                    message = $"Corte de caja validado exitosamente para {gestor.Nombre} {gestor.Apellido}",
-                    data = new
-                    {
-                        fechaCorte = request.FechaCorte,
-                        gestor = new
-                        {
-                            id = gestor.Id,
-                            nombre = $"{gestor.Nombre} {gestor.Apellido}"
-                        },
-                        movimientosValidados = movimientos.Count,
-                        totalIngresos = totalIngresos,
-                        totalEgresos = totalEgresos,
-                        balanceNeto = balanceNeto,
-                        validadoPor = userId,
-                        fechaValidacion = DateTime.Now
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                return Json(new
-                {
-                    success = false,
-                    message = "Error al validar el corte de caja del gestor",
-                    error = ex.Message
-                });
-            }
-        }
 
 
         [HttpGet]
@@ -2624,116 +1328,7 @@ namespace Credi_Express.Controllers
             return Json(new { success = true, cronograma = cronograma });
         }
 
-        // =====================================================
-        // NUEVO MÉTODO: Registrar pago usando calendario
-        // =====================================================
 
-        [HttpPost]
-        public async Task<IActionResult> RegistrarPagoConCalendario([FromForm] int idPrestamo, [FromForm] int numeroCuota,
-            [FromForm] decimal montoCapital, [FromForm] decimal montoInteres, [FromForm] decimal montoMora,
-            [FromForm] decimal montoTotal, [FromForm] string metodoPago, [FromForm] string observaciones)
-        {
-            try
-            {
-                var userId = HttpContext.Session.GetInt32("UsuarioId") ?? 1;
-                var gestor = await context.Gestors
-                    .FirstOrDefaultAsync(g => g.Idusuario == userId);
-                // Obtener la cuota del calendario
-                var cuotaCalendario = await context.CalendarioPagos
-                    .FirstOrDefaultAsync(cp => cp.IdPrestamo == idPrestamo && cp.NumeroCuota == numeroCuota);
-
-                if (cuotaCalendario == null)
-                {
-                    return Json(new { success = false, message = "Cuota no encontrada en el calendario de pagos" });
-                }
-
-                // Verificar que se pueda pagar
-                if (cuotaCalendario.Estado == "PAGADO")
-                {
-                    return Json(new { success = false, message = "Esta cuota ya fue pagada" });
-                }
-
-                // Crear registro en pagosdetalle
-                var detalleMovimiento = new Pagosdetalle
-                {
-                    Idprestamo = idPrestamo,
-                    FechaPago = DateOnly.FromDateTime(DateTime.Now),
-                    Numeropago = numeroCuota,
-                    Monto = montoTotal,
-                    Pagado = 1,
-                    FechaCouta = DateOnly.FromDateTime(DateTime.Now),
-                    Capital = montoCapital,
-                    Interes = montoInteres,
-                    Mora = montoMora,
-                    TipoPago = metodoPago,
-                    TipoMovimiento = "PAGO",
-                    CreadoPor = gestor?.Id ?? 0,
-                };
-
-                context.Pagosdetalles.Add(detalleMovimiento);
-                await context.SaveChangesAsync();
-
-                // Actualizar calendario de pagos
-                cuotaCalendario.FechaPagoReal = DateOnly.FromDateTime(DateTime.Now);
-                cuotaCalendario.MontoPagado = montoTotal;
-                cuotaCalendario.Capital = montoCapital;
-                cuotaCalendario.Interes = montoInteres;
-                cuotaCalendario.Mora = montoMora;
-                cuotaCalendario.Estado = montoTotal >= cuotaCalendario.MontoCuota ? "PAGADO" : "PARCIAL";
-                cuotaCalendario.Observaciones = observaciones;
-                cuotaCalendario.FechaActualizacion = DateTime.Now;
-
-                // Calcular días de mora si aplicaba
-                var fechaHoy = DateOnly.FromDateTime(DateTime.Today);
-                if (cuotaCalendario.FechaProgramada < fechaHoy)
-                {
-                    cuotaCalendario.DiasMora = fechaHoy.DayNumber - cuotaCalendario.FechaProgramada.DayNumber;
-                }
-
-                // Actualizar próximo pago en prestamos
-                var proximoPago = await context.CalendarioPagos
-                    .Where(cp => cp.IdPrestamo == idPrestamo && cp.Estado == "PENDIENTE")
-                    .OrderBy(cp => cp.FechaProgramada)
-                    .Select(cp => cp.FechaProgramada)
-                    .FirstOrDefaultAsync();
-
-                var prestamo = await context.Prestamos.FindAsync(idPrestamo);
-                if (prestamo != null)
-                {
-                    prestamo.ProximoPago = proximoPago;
-
-                    // Si no hay más cuotas pendientes, marcar como cancelado
-                    var cuotasPendientes = await context.CalendarioPagos
-                        .CountAsync(cp => cp.IdPrestamo == idPrestamo && cp.Estado == "PENDIENTE");
-
-                    if (cuotasPendientes == 0)
-                    {
-                        prestamo.Estado = "C"; // Cancelado/Completado
-                        prestamo.FechaCancelado = DateOnly.FromDateTime(DateTime.Now);
-                    }
-                }
-
-                await context.SaveChangesAsync();
-
-                return Json(new
-                {
-                    success = true,
-                    message = "Pago registrado exitosamente",
-                    data = new
-                    {
-                        idCobro = detalleMovimiento.Id,
-                        numeroCuota = numeroCuota,
-                        montoTotal = montoTotal,
-                        estadoPrestamo = prestamo?.Estado,
-                        proximoPago = proximoPago
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = $"Error al registrar el pago: {ex.Message}" });
-            }
-        }
 
         // 1. Método en AuxiliaresController para obtener permisos del usuario
         [HttpGet]
@@ -2827,213 +1422,6 @@ namespace Credi_Express.Controllers
             }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> ActualizarPermisosPuesto([FromBody] ActualizarPermisosRequest request)
-        {
-            try
-            {
-                if (request?.PuestoId == null || request.Permisos == null)
-                {
-                    return BadRequest(new { success = false, message = "Datos inválidos" });
-                }
-
-                // Verificar que el puesto existe
-                var puestoExiste = await context.Puestos.AnyAsync(p => p.Id == request.PuestoId);
-                if (!puestoExiste)
-                {
-                    return NotFound(new { success = false, message = "Puesto no encontrado" });
-                }
-
-                // Obtener permisos actuales del puesto
-                var permisosActuales = await context.PuestoPermisos
-                    .Where(pp => pp.PuestoId == request.PuestoId)
-                    .ToListAsync();
-
-                // Procesar cada permiso
-                foreach (var permisoRequest in request.Permisos)
-                {
-                    var permisoExistente = permisosActuales.FirstOrDefault(pp => pp.PermisoId == permisoRequest.PermisoId);
-
-                    if (permisoExistente != null)
-                    {
-                        // Actualizar permiso existente
-                        permisoExistente.Activo = (ulong)permisoRequest.Activo;
-                    }
-                    else
-                    {
-                        // Crear nuevo permiso si está activo
-                        if (permisoRequest.Activo == 1)
-                        {
-                            var nuevoPermiso = new PuestoPermiso
-                            {
-                                PuestoId = request.PuestoId,
-                                PermisoId = permisoRequest.PermisoId,
-                                Activo = 1
-                            };
-                            context.PuestoPermisos.Add(nuevoPermiso);
-                        }
-                    }
-                }
-
-                await context.SaveChangesAsync();
-
-                return Ok(new { success = true, message = "Permisos actualizados correctamente" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { success = false, message = $"Error al actualizar permisos: {ex.Message}" });
-            }
-        }
-
-        // ===== CLASE PARA EL REQUEST (agregar al final del archivo AuxiliaresController.cs) =====
-        public class ActualizarPermisosRequest
-        {
-            public int PuestoId { get; set; }
-            public List<PermisoRequest> Permisos { get; set; } = new List<PermisoRequest>();
-        }
-
-        public class PermisoRequest
-        {
-            public int PermisoId { get; set; }
-            public int Activo { get; set; }
-        }
-
-        // ===== AGREGAR ESTE MÉTODO AL AuxiliaresController.cs =====
-
-        /// <summary>
-        /// Procesa la liquidación total de un préstamo
-        /// </summary>
-        /// <param name="request">Datos de la liquidación</param>
-        /// <returns></returns>
-        [HttpPost]
-        public async Task<IActionResult> ProcesarLiquidacionTotal([FromForm] LiquidacionRequest request)
-        {
-            try
-            {
-                // Validar que el préstamo existe y está activo
-                var prestamo = await context.Prestamos
-                    .Include(p => p.IdclienteNavigation)
-                    .FirstOrDefaultAsync(p => p.Id == request.IdPrestamo && p.Estado == "A");
-
-                if (prestamo == null)
-                {
-                    return Json(new { success = false, message = "Préstamo no encontrado o no está activo" });
-                }
-
-                // Verificar que el préstamo está aprobado y desembolsado
-                if (prestamo.Aprobado != 1 || prestamo.DetalleAprobado != "DESEMBOLSADO")
-                {
-                    return Json(new { success = false, message = "El préstamo debe estar aprobado y desembolsado" });
-                }
-
-                // Obtener pagos realizados para calcular saldos
-                var pagosRealizados = await context.Pagosdetalles
-                    .Where(p => p.Idprestamo == request.IdPrestamo && p.Pagado == 1 && p.TipoMovimiento != "DESEMBOLSO")
-                    .ToListAsync();
-
-                // Calcular saldos
-                var capitalPagado = pagosRealizados.Sum(p => p.Capital ?? 0);
-                var saldoCapital = (prestamo.Monto ?? 0) - capitalPagado;
-
-                // Validar que hay saldo pendiente
-                if (saldoCapital <= 0)
-                {
-                    return Json(new { success = false, message = "El préstamo ya está completamente pagado" });
-                }
-
-                // Calcular interés pendiente
-                var interesPagado = pagosRealizados.Sum(p => p.Interes ?? 0);
-                var interesTotal = prestamo.Interes ?? 0;
-                var interesPendiente = Math.Max(0, interesTotal - interesPagado);
-
-                // Aplicar descuento del 10% en intereses (configurable)
-                var descuentoInteres = interesPendiente * 0.10m;
-                var interesConDescuento = interesPendiente - descuentoInteres;
-
-                // Total de liquidación
-                var totalLiquidacion = saldoCapital + interesConDescuento;
-
-                // Obtener información del usuario actual
-                var userId = HttpContext.Session.GetInt32("UsuarioId") ?? 1;
-                var gestor = await context.Gestors
-                    .FirstOrDefaultAsync(g => g.Idusuario == userId);
-
-                // Crear el registro de liquidación en pagosdetalle
-                var registroLiquidacion = new Pagosdetalle
-                {
-                    Idprestamo = request.IdPrestamo,
-                    FechaPago = DateOnly.FromDateTime(DateTime.Now),
-                    Numeropago = 999, // Número especial para liquidaciones
-                    Monto = totalLiquidacion,
-                    Pagado = 1,
-                    FechaCouta = DateOnly.FromDateTime(DateTime.Now),
-                    Capital = saldoCapital,
-                    Interes = interesConDescuento,
-                    Mora = 0,
-                    Domicilio = 0,
-                    TipoPago = "LIQUIDACION_TOTAL",
-                    TipoMovimiento = "COBRO",
-                    ObservacionesMovimiento = $"LIQUIDACIÓN TOTAL - {request.Observaciones}. Descuento aplicado: ${descuentoInteres:F2}",
-                    CreadoPor = gestor?.Id ?? 0,
-                    FechaCreacion = DateTime.Now
-                };
-
-                // Agregar el registro
-                context.Pagosdetalles.Add(registroLiquidacion);
-
-                // Actualizar el estado del préstamo
-                prestamo.Estado = "C"; // Cancelado
-                prestamo.FechaCancelado = DateOnly.FromDateTime(DateTime.Now);
-                prestamo.ProximoPago = null; // Ya no hay próximo pago
-
-                // Guardar todos los cambios
-                await context.SaveChangesAsync();
-
-                // Preparar respuesta con detalles de la liquidación
-                var respuesta = new
-                {
-                    success = true,
-                    message = "Liquidación procesada exitosamente",
-                    data = new
-                    {
-                        idLiquidacion = registroLiquidacion.Id,
-                        numeroPrestamo = request.IdPrestamo,
-                        cliente = $"{prestamo.IdclienteNavigation?.Nombre} {prestamo.IdclienteNavigation?.Apellido}",
-                        montoOriginal = prestamo.Monto,
-                        capitalPendiente = saldoCapital,
-                        interesPendienteOriginal = interesPendiente,
-                        descuentoAplicado = descuentoInteres,
-                        interesConDescuento = interesConDescuento,
-                        totalLiquidado = totalLiquidacion,
-                        fechaLiquidacion = DateTime.Now,
-                        ahorroCliente = descuentoInteres,
-                        // Estadísticas finales
-                        estadisticas = new
-                        {
-                            capitalTotalPagado = capitalPagado + saldoCapital,
-                            interesTotalPagado = interesPagado + interesConDescuento,
-                            totalPagadoPrestamo = prestamo.Monto + interesPagado + interesConDescuento,
-                            descuentoTotal = descuentoInteres,
-                            estadoFinal = "LIQUIDADO"
-                        }
-                    }
-                };
-
-                return Json(respuesta);
-            }
-            catch (Exception ex)
-            {
-                // Log del error
-                Console.WriteLine($"Error en liquidación: {ex.Message}");
-
-                return Json(new
-                {
-                    success = false,
-                    message = "Error interno al procesar la liquidación",
-                    error = ex.Message
-                });
-            }
-        }
 
         /// <summary>
         /// Obtiene información detallada para liquidación de un préstamo específico
@@ -3317,6 +1705,1828 @@ namespace Credi_Express.Controllers
                 {
                     success = false,
                     message = "Error interno al buscar el préstamo",
+                    error = ex.Message
+                });
+            }
+        }
+
+        /// <summary>
+        ///  Solicitudes por rango de fecha , estado y si es gestor de cuenta filtra por gestor
+        /// </summary>
+        /// <param name="estado"></param>
+        /// <param name="fechaInicio"></param>
+        /// <param name="fechaFin"></param>
+        /// <param name="extra"></param>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<IActionResult> GetSolicitudes(string estado, DateOnly? fechaInicio, DateOnly? fechaFin, string extra)
+        {
+            var gestorId = HttpContext.Session.GetInt32("GestorId");
+            IQueryable<Prestamo> query = context.Prestamos;
+
+            if (estado == "0" || estado == "1")
+            {
+                ulong aprobadoValor = Convert.ToUInt64(estado);
+                query = query.Where(c => c.Aprobado == aprobadoValor);
+            }
+
+            // Omite si tiene permisos como adminsitrador para poder verlas todas si no entonces aplica al filtro de gesto
+            if (!User.TienePermiso("Home/SolicitudesPrestamo", "Admin"))
+            {
+                // Filtra por los clientes asignados al gestor
+                query = query.Include(p => p.IdclienteNavigation)
+                                 .Where(c => c.IdclienteNavigation.Idgestor == gestorId.Value);
+            }
+
+
+            // Aplicar filtro de fechas solo si se seleccionó una opción válida
+            if (extra == "1" && fechaInicio.HasValue && fechaFin.HasValue)
+            {
+                // Filtrar por fecha del préstamo
+                query = query.Where(c => c.Fecha >= fechaInicio && c.Fecha <= fechaFin);
+            }
+
+            var a = await query
+                .Select(c => new PrestamosVM
+                {
+                    Id = c.Id,
+                    IdCliente = c.Idcliente,
+                    NombreCliente = context.Clientes
+                        .Where(a => a.Id == c.Idcliente)
+                        .Select(a => a.Nombre + " " + a.Apellido + " (" + a.Dui + ")")
+                        .FirstOrDefault(),
+                    fecha = c.Fecha,
+                    Monto = c.Monto,
+                    Tasa = c.Tasa,
+                    NumCoutas = c.NumCoutas,
+                    Cuotas = c.Cuota,
+                    Interes = c.Interes,
+                    ProximoPago = c.ProximoPago,
+                    Estado = c.Estado,
+                    FechaCancelado = c.FechaCancelado,
+                    TipoPrestamo = c.TipoPrestamo,
+                    Aprobado = c.Aprobado,
+                    CreadoPor = c.CreadaPor,
+                    FechaCreadaFecha = c.FechaCreadafecha,
+                    TasaDomicilio = c.TasaDomicilio,
+                    Domicilio = c.Domicilio,
+                    DetalleAprobado = c.DetalleAprobado,
+                    Observaciones = c.Observaciones,
+                    DetalleRechazo = c.DetalleRechazo,
+                    NombreCreadoPor = context.Gestors
+                        .Where(a => a.Id == c.CreadaPor)
+                        .Select(a => a.Nombre + " " + a.Apellido)
+                        .FirstOrDefault() ?? "Gestor no asignado",
+                    NombreGestor = context.Gestors
+                        .Where(a => a.Id == c.IdclienteNavigation.Idgestor)
+                        .Select(a => a.Nombre + " " + a.Apellido)
+                        .FirstOrDefault() ?? "Gestor no asignado"
+                })
+                .ToListAsync();
+
+            return Ok(a);
+        }
+
+        //======================================================================
+        // SOLICITUDES DE POST
+        //======================================================================
+
+        /// <summary>
+        /// Metodo para Editar solicitudes del prestamo 
+        /// </summary>
+        /// <param name="idSolicitud"></param>
+        /// <param name="monto"></param>
+        /// <param name="numCuotas"></param>
+        /// <param name="tasa"></param>
+        /// <param name="tasaDomicilio"></param>
+        /// <param name="motivo"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public IActionResult EditarSolicitudPrestamo([FromForm] int idSolicitud, [FromForm] decimal monto,
+            [FromForm] int numCuotas, [FromForm] decimal tasa, [FromForm] decimal tasaDomicilio,
+            [FromForm] string motivo)
+        {
+            try
+            {
+                // Validar que la solicitud existe
+                var solicitud = context.Prestamos.FirstOrDefault(p => p.Id == idSolicitud);
+                if (solicitud == null)
+                {
+                    return Json(new { success = false, message = "La solicitud no existe." });
+                }
+
+                // Validar que no esté aprobada
+                if (solicitud.Aprobado == 1)
+                {
+                    return Json(new { success = false, message = "No se puede editar una solicitud ya aprobada." });
+                }
+
+                if (numCuotas <= 0)
+                {
+                    return Json(new { success = false, message = "El número de cuotas debe ser mayor a 0" });
+                }
+
+                if (tasa <= 0)
+                {
+                    return Json(new { success = false, message = "La tasa de interés debe ser mayor a 1%" });
+                }
+
+                if (tasaDomicilio < 0)
+                {
+                    return Json(new { success = false, message = "La tasa de domicilio debe ser mayor 0%" });
+                }
+
+                if (string.IsNullOrWhiteSpace(motivo) || motivo.Trim().Length < 10)
+                {
+                    return Json(new { success = false, message = "El motivo debe tener al menos 10 caracteres." });
+                }
+
+                // Calcular nueva cuota
+                var interes = monto * (tasa / 100) * numCuotas;
+                var domicilio = monto * (tasaDomicilio / 100) * numCuotas;
+                var total = monto + interes + domicilio;
+                var nuevaCuota = total / numCuotas;
+
+                // Actualizar la solicitud
+                solicitud.Monto = monto;
+                solicitud.NumCoutas = numCuotas;
+                solicitud.Tasa = tasa;
+                solicitud.TasaDomicilio = tasaDomicilio;
+                //solicitud.cou = nuevaCuota;
+
+                // Agregar motivo a observaciones
+                if (string.IsNullOrEmpty(solicitud.Observaciones))
+                {
+                    solicitud.Observaciones = $"MODIFICADO: {motivo.Trim()}";
+                }
+                else
+                {
+                    solicitud.Observaciones += $"\n\nMODIFICADO ({DateTime.Now:dd/MM/yyyy HH:mm}): {motivo.Trim()}";
+                }
+
+                // Guardar cambios
+                context.SaveChanges();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Solicitud modificada exitosamente.",
+                    data = new
+                    {
+                        solicitudId = idSolicitud,
+                        nuevoCuota = nuevaCuota.ToString("F2"),
+                        nuevoTotal = total.ToString("F2"),
+                        fechaModificacion = DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = $"Error inesperado: {ex.Message}"
+                });
+            }
+        }
+
+        /// <summary>
+        /// Crear un nuevo cliente
+        /// </summary>
+        /// <param name="cliente"></param>
+        /// <param name="DuiFrente"></param>
+        /// <param name="DuiDetras"></param>
+        /// <param name="FotoNegocio1"></param>
+        /// <param name="FotoNegocio2"></param>
+        /// <param name="FotoNegocio3"></param>
+        /// <param name="FotoNegocio4"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public IActionResult CrearCliente([FromForm] Cliente cliente, IFormFile? DuiFrente, IFormFile? DuiDetras, IFormFile? FotoNegocio1, IFormFile? FotoNegocio2, IFormFile? FotoNegocio3, IFormFile? FotoNegocio4)
+        {
+            try
+            {
+
+                var clienteExistente = context.Clientes.FirstOrDefault(c => c.Dui == cliente.Dui);
+                if (clienteExistente != null)
+                {
+                    TempData["Mensaje"] = "El cliente con ese DUI ya existe.";
+                    TempData["TipoMensaje"] = "warning";
+                    return RedirectToAction("Clientes", "Home");
+                }
+
+                // Guardar imágenes si se enviaron
+                string GuardarImagen(IFormFile? file)
+                {
+                    if (file == null) return null;
+
+                    var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/clientes");
+                    if (!Directory.Exists(folderPath))
+                        Directory.CreateDirectory(folderPath);
+
+                    var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+                    var fullPath = Path.Combine(folderPath, fileName);
+
+                    using (var stream = new FileStream(fullPath, FileMode.Create))
+                    {
+                        file.CopyTo(stream);
+                    }
+
+                    return "/uploads/clientes/" + fileName; // URL accesible desde el navegador
+                }
+
+                if (DuiFrente != null) cliente.DuiFrente = GuardarImagen(DuiFrente);
+                if (DuiDetras != null) cliente.DuiDetras = GuardarImagen(DuiDetras);
+                if (FotoNegocio1 != null) cliente.Fotonegocio1 = GuardarImagen(FotoNegocio1);
+                if (FotoNegocio2 != null) cliente.Fotonegocio2 = GuardarImagen(FotoNegocio2);
+                if (FotoNegocio3 != null) cliente.Fotonegocio3 = GuardarImagen(FotoNegocio3);
+                if (FotoNegocio4 != null) cliente.Fotonegocio4 = GuardarImagen(FotoNegocio4);
+                cliente.FechaIngreso = DateOnly.FromDateTime(DateTime.Now);
+                cliente.Activo = 1;
+                context.Clientes.Add(cliente);
+                context.SaveChanges();
+
+                TempData["Mensaje"] = "Cliente creado correctamente";
+                TempData["TipoMensaje"] = "success";
+                return RedirectToAction("Clientes", "Home");
+            }
+            catch (Exception ex)
+            {
+                TempData["Mensaje"] = $"Ocurrió un error inesperado, {ex.Message}";
+                TempData["TipoMensaje"] = "danger";
+                return RedirectToAction("Clientes", "Home");
+            }
+        }
+
+        /// <summary>
+        /// Editar datos de cliente
+        /// </summary>
+        /// <param name="cliente"></param>
+        /// <param name="DuiFrente"></param>
+        /// <param name="DuiDetras"></param>
+        /// <param name="FotoNegocio1"></param>
+        /// <param name="FotoNegocio2"></param>
+        /// <param name="FotoNegocio3"></param>
+        /// <param name="FotoNegocio4"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public IActionResult EditarCliente([FromForm] Cliente cliente, IFormFile? DuiFrente, IFormFile? DuiDetras, IFormFile? FotoNegocio1, IFormFile? FotoNegocio2, IFormFile? FotoNegocio3, IFormFile? FotoNegocio4)
+        {
+            var exists = context.Clientes.FirstOrDefault(c => c.Id == cliente.Id);
+            if (exists == null)
+            {
+                TempData["Mensaje"] = "El cliente con ese DUI No existe.";
+                TempData["TipoMensaje"] = "danger";
+                return RedirectToAction("Clientes", "Home");
+            }
+
+            try
+            {
+                string GuardarImagen(IFormFile? file)
+                {
+                    if (file == null) return null;
+
+                    var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/clientes");
+                    if (!Directory.Exists(folderPath))
+                        Directory.CreateDirectory(folderPath);
+
+                    var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+                    var fullPath = Path.Combine(folderPath, fileName);
+
+                    using (var stream = new FileStream(fullPath, FileMode.Create))
+                    {
+                        file.CopyTo(stream);
+                    }
+
+                    return "/uploads/clientes/" + fileName;
+                }
+
+                void EliminarImagen(string? rutaRelativa)
+                {
+                    if (string.IsNullOrWhiteSpace(rutaRelativa)) return;
+
+                    var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", rutaRelativa.TrimStart('/'));
+                    if (System.IO.File.Exists(fullPath))
+                        System.IO.File.Delete(fullPath);
+                }
+
+                // Si llega una nueva imagen, eliminar la vieja y guardar la nueva
+                if (DuiFrente != null)
+                {
+                    EliminarImagen(exists.DuiFrente);
+                    exists.DuiFrente = GuardarImagen(DuiFrente);
+                }
+
+                if (DuiDetras != null)
+                {
+                    EliminarImagen(exists.DuiDetras);
+                    exists.DuiDetras = GuardarImagen(DuiDetras);
+                }
+
+                if (FotoNegocio1 != null)
+                {
+                    EliminarImagen(exists.Fotonegocio1);
+                    exists.Fotonegocio1 = GuardarImagen(FotoNegocio1);
+                }
+
+                if (FotoNegocio2 != null)
+                {
+                    EliminarImagen(exists.Fotonegocio2);
+                    exists.Fotonegocio2 = GuardarImagen(FotoNegocio2);
+                }
+
+                if (FotoNegocio3 != null)
+                {
+                    EliminarImagen(exists.Fotonegocio3);
+                    exists.Fotonegocio3 = GuardarImagen(FotoNegocio3);
+                }
+
+                if (FotoNegocio4 != null)
+                {
+                    EliminarImagen(exists.Fotonegocio4);
+                    exists.Fotonegocio4 = GuardarImagen(FotoNegocio4);
+                }
+
+                // Actualizar datos normales
+                exists.Nombre = cliente.Nombre;
+                exists.Apellido = cliente.Apellido;
+                exists.Dui = cliente.Dui;
+                exists.Nit = cliente.Nit;
+                exists.Telefono = cliente.Telefono;
+                exists.Celular = cliente.Celular;
+                exists.Direccion = cliente.Direccion;
+                exists.FechaNacimiento = cliente.FechaNacimiento;
+                exists.Giro = cliente.Giro;
+                exists.Referencia1 = cliente.Referencia1;
+                exists.Telref1 = cliente.Telref1;
+                exists.Referencia2 = cliente.Referencia2;
+                exists.Telref2 = cliente.Telref2;
+                exists.Departamento = cliente.Departamento;
+                exists.Idgestor = cliente.Idgestor;
+                exists.Sexo = cliente.Sexo;
+                exists.Activo = cliente.Activo;
+                exists.TipoPer = cliente.TipoPer;
+                exists.Latitud = cliente.Latitud;
+                exists.Longitud = cliente.Longitud;
+                exists.Profesion = cliente.Profesion;
+                exists.Email = cliente.Email;
+
+                context.SaveChanges();
+                TempData["Mensaje"] = "Cliente modificado correctamente";
+                TempData["TipoMensaje"] = "success";
+                return RedirectToAction("Clientes", "Home");
+            }
+            catch (Exception ex)
+            {
+                TempData["Mensaje"] = $"Ocurrió un error inesperado: {ex.Message}";
+                TempData["TipoMensaje"] = "danger";
+                return RedirectToAction("Clientes", "Home");
+            }
+        }
+
+        /// <summary>
+        /// Eliminar cliente
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public IActionResult EliminarCliente(int id)
+        {
+            var cliente = context.Clientes.FirstOrDefault(c => c.Id == id);
+            if (cliente == null)
+                return NotFound("Cliente no encontrado");
+
+            try
+            {
+                // Función para borrar una imagen física si existe
+                void EliminarImagen(string? rutaRelativa)
+                {
+                    if (string.IsNullOrWhiteSpace(rutaRelativa)) return;
+
+                    var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", rutaRelativa.TrimStart('/'));
+                    if (System.IO.File.Exists(fullPath))
+                    {
+                        System.IO.File.Delete(fullPath);
+                    }
+                }
+
+                // Eliminar fotos físicas del cliente
+                EliminarImagen(cliente.DuiFrente);
+                EliminarImagen(cliente.DuiDetras);
+                EliminarImagen(cliente.Fotonegocio1);
+                EliminarImagen(cliente.Fotonegocio2);
+                EliminarImagen(cliente.Fotonegocio3);
+                EliminarImagen(cliente.Fotonegocio4);
+
+                // Eliminar cliente de la base de datos
+                context.Clientes.Remove(cliente);
+                context.SaveChanges();
+
+                TempData["Mensaje"] = "Cliente eliminado correctamente";
+                TempData["TipoMensaje"] = "success";
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.InnerException != null && ex.InnerException.Message.Contains("REFERENCE"))
+                {
+                    TempData["Mensaje"] = "No se puede eliminar el cliente porque tiene préstamos asociados.";
+                }
+                else
+                {
+                    TempData["Mensaje"] = $"Ocurrió un error inesperado: {ex.Message}";
+                }
+                TempData["TipoMensaje"] = "danger";
+            }
+            catch (Exception ex)
+            {
+                TempData["Mensaje"] = $"Error inesperado: {ex.Message}";
+                TempData["TipoMensaje"] = "danger";
+            }
+
+            return RedirectToAction("Clientes", "Home");
+        }
+
+
+        /// <summary>
+        /// Crear un nuevo colaborador
+        /// </summary>
+        /// <param name="user"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public IActionResult CrearColaborador([FromForm] Gestor user)
+        {
+            try
+            {
+
+                user.Activo = 1;
+                context.Gestors.Add(user);
+                context.SaveChanges();
+
+                TempData["Mensaje"] = "Colaborador creado correctamente";
+                TempData["TipoMensaje"] = "success";
+                return RedirectToAction("Colaboradores", "Home");
+            }
+            catch (Exception ex)
+            {
+                TempData["Mensaje"] = $"Ocurrió un error inesperado, {ex.Message}";
+                TempData["TipoMensaje"] = "danger";
+                return RedirectToAction("Colaboradores", "Home");
+            }
+        }
+
+
+        /// <summary>
+        /// Editar un colaborador existente
+        /// </summary>
+        /// <param name="user"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public IActionResult EdiarColaborador([FromForm] Gestor user)
+        {
+            var exists = context.Gestors.FirstOrDefault(c => c.Id == user.Id);
+            if (exists == null)
+            {
+                TempData["Mensaje"] = "Colaborador no encontrado";
+                TempData["TipoMensaje"] = "danger";
+                return RedirectToAction("Colaboradores", "Home");
+            }
+
+            try
+            {
+                exists.Nombre = user.Nombre;
+                exists.Apellido = user.Apellido;
+                exists.Telefono = user.Telefono;
+                exists.Direccion = user.Direccion;
+                exists.Departamento = user.Departamento;
+                exists.Activo = user.Activo;
+                exists.Idpuesto = user.Idpuesto;
+
+                context.SaveChanges();
+                TempData["Mensaje"] = "Colaborador modificado correctamente";
+                TempData["TipoMensaje"] = "success";
+                return RedirectToAction("Colaboradores", "Home");
+            }
+            catch (Exception ex)
+            {
+                TempData["Mensaje"] = $"Ocurrió un error inesperado: {ex.Message}";
+                TempData["TipoMensaje"] = "danger";
+                return RedirectToAction("Colaboradores", "Home");
+            }
+        }
+
+
+        /// <summary>
+        /// Elimina un colaboraror de la base de datos.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public IActionResult EliminarColaborador(int id)
+        {
+            var exists = context.Gestors.FirstOrDefault(c => c.Id == id);
+            if (exists == null)
+            {
+                TempData["Mensaje"] = "Colaborador no encontrado";
+                TempData["TipoMensaje"] = "danger";
+                return RedirectToAction("Colaboradores", "Home");
+            }
+
+            var cliente = context.Clientes.Any(c => c.Idgestor == id);
+            if (cliente)
+            {
+                TempData["Mensaje"] = "Colaborador no se puede eliminar, tiene Clientes Asignados";
+                TempData["TipoMensaje"] = "danger";
+                return RedirectToAction("Colaboradores", "Home");
+            }
+
+            try
+            {
+                var user = context.Logins.FirstOrDefault(l => l.Id == exists.Idusuario);
+                if (user != null)
+                {
+                    // Eliminar el usuario asociado al colaborador
+                    context.Logins.Remove(user);
+                    context.SaveChanges();
+                }
+
+                // Eliminar cliente de la base de datos
+                context.Gestors.Remove(exists);
+                context.SaveChanges();
+
+                TempData["Mensaje"] = "Colaborador eliminado correctamente";
+                TempData["TipoMensaje"] = "success";
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.InnerException != null && ex.InnerException.Message.Contains("REFERENCE"))
+                {
+                    TempData["Mensaje"] = "No se puede eliminar colaborador por que tiene datos asociados.";
+                }
+                else
+                {
+                    TempData["Mensaje"] = $"Ocurrió un error inesperado: {ex.Message}";
+                }
+                TempData["TipoMensaje"] = "danger";
+            }
+            catch (Exception ex)
+            {
+                TempData["Mensaje"] = $"Error inesperado: {ex.Message}";
+                TempData["TipoMensaje"] = "danger";
+            }
+
+            return RedirectToAction("Colaboradores", "Home");
+        }
+
+        /// <summary>
+        /// Creacion de usuario para un empleado
+        /// </summary>
+        /// <param name="log"></param>
+        /// <param name="IdColaborador"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public IActionResult CrudLogin([FromForm] Login log, [FromForm] int IdColaborador)
+        {
+            try
+            {
+                var colaborador = context.Gestors.FirstOrDefault(l => l.Id == IdColaborador);
+
+                if (colaborador == null)
+                {
+                    TempData["Mensaje"] = "Colaborador no encontrado";
+                    TempData["TipoMensaje"] = "danger";
+                    return RedirectToAction("Colaboradores", "Home");
+                }
+
+                // Validar que el nombre de usuario no exista para otro login
+                var usuarioExistente = context.Logins
+                    .FirstOrDefault(l => l.Usuario == log.Usuario && l.Id != colaborador.Idusuario);
+
+                if (usuarioExistente != null)
+                {
+                    TempData["Mensaje"] = "El nombre de usuario ya está en uso.";
+                    TempData["TipoMensaje"] = "danger";
+                    return RedirectToAction("Colaboradores", "Home");
+                }
+
+                var usuario = context.Logins.FirstOrDefault(l => l.Id == colaborador.Idusuario);
+                if (usuario != null)
+                {
+                    // Actualizar usuario existente
+                    usuario.Usuario = log.Usuario;
+                    usuario.Password = log.Password;
+                    usuario.Activo = 1;
+                }
+                else
+                {
+                    log.Activo = 1;
+                    context.Logins.Add(log);
+                    context.SaveChanges();
+                    colaborador.Idusuario = log.Id;
+                }
+                context.SaveChanges();
+
+                TempData["Mensaje"] = "Usuario actualizado correctamente";
+                TempData["TipoMensaje"] = "success";
+                return RedirectToAction("Colaboradores", "Home");
+            }
+            catch (Exception ex)
+            {
+                TempData["Mensaje"] = $"Error inesperado: {ex.Message}";
+                TempData["TipoMensaje"] = "danger";
+            }
+
+            return RedirectToAction("Colaboradores", "Home");
+        }
+
+
+        /// <summary>
+        /// Agrenado fechas feriadas al sistema
+        /// </summary>
+        /// <param name="cl"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public IActionResult CrearFechaFeriada([FromForm] Calendario cl)
+        {
+            try
+            {
+                context.Calendarios.Add(cl);
+                context.SaveChanges();
+
+                TempData["Mensaje"] = "Fecha creada correctamente";
+                TempData["TipoMensaje"] = "success";
+                return RedirectToAction("Calendario", "Home");
+            }
+            catch (Exception ex)
+            {
+                TempData["Mensaje"] = $"Ocurrió un error inesperado, {ex.Message}";
+                TempData["TipoMensaje"] = "danger";
+                return RedirectToAction("Calendario", "Home");
+            }
+        }
+
+
+        /// <summary>
+        /// Edita fechas feriadas en el sistema
+        /// </summary>
+        /// <param name="cl"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public IActionResult EdiarCalendarioFeriado([FromForm] Calendario cl)
+        {
+            var exists = context.Calendarios.FirstOrDefault(c => c.Idcalendario == cl.Idcalendario);
+            if (exists == null)
+            {
+                TempData["Mensaje"] = "Fecha no encontrada";
+                TempData["TipoMensaje"] = "danger";
+                return RedirectToAction("Calendario", "Home");
+            }
+
+            try
+            {
+                exists.Fecha = cl.Fecha;
+                exists.Descripcion = cl.Descripcion;
+
+                context.SaveChanges();
+                TempData["Mensaje"] = "Calendario modificado correctamente";
+                TempData["TipoMensaje"] = "success";
+                return RedirectToAction("Calendario", "Home");
+            }
+            catch (Exception ex)
+            {
+                TempData["Mensaje"] = $"Ocurrió un error inesperado: {ex.Message}";
+                TempData["TipoMensaje"] = "danger";
+                return RedirectToAction("Calendario", "Home");
+            }
+        }
+
+
+        /// <summary>
+        /// Eliminar un calendario feriado del sistema
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public IActionResult EliminarCalendarioFeriado(int id)
+        {
+            var exists = context.Calendarios.FirstOrDefault(c => c.Idcalendario == id);
+            if (exists == null)
+            {
+                TempData["Mensaje"] = "Fecha no encontrada";
+                TempData["TipoMensaje"] = "danger";
+                return RedirectToAction("Calendario", "Home");
+            }
+            try
+            {
+                // Eliminar cliente de la base de datos
+                context.Calendarios.Remove(exists);
+                context.SaveChanges();
+
+                TempData["Mensaje"] = "Fecha eliminado correctamente";
+                TempData["TipoMensaje"] = "success";
+            }
+            catch (DbUpdateException ex)
+            {
+                TempData["Mensaje"] = $"Ocurrió un error inesperado: {ex.Message}";
+                TempData["TipoMensaje"] = "danger";
+            }
+            catch (Exception ex)
+            {
+                TempData["Mensaje"] = $"Error inesperado: {ex.Message}";
+                TempData["TipoMensaje"] = "danger";
+            }
+
+            return RedirectToAction("Calendario", "Home");
+        }
+
+
+        /// <summary>
+        /// Crear solicitud de un cliente para prestamo
+        /// </summary>
+        /// <param name="p"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public IActionResult CrearSolicitud([FromForm] Prestamo p)
+        {
+            try
+            {
+
+                var clienteExistente = context.Clientes.FirstOrDefault(c => c.Id == p.Idcliente);
+                if (clienteExistente == null)
+                {
+                    TempData["Mensaje"] = "El Cliente no existe.";
+                    TempData["TipoMensaje"] = "danger";
+                    return RedirectToAction("NuevoPrestamo", "Home");
+                }
+
+                var userId = HttpContext.Session.GetInt32("UsuarioId");
+                var gestorId = HttpContext.Session.GetInt32("GestorId");
+
+                p.CreadaPor = gestorId; // Id de empleado NO de usuario
+                p.Aprobado = 0;
+                p.Estado = "P";
+                p.DetalleAprobado = "EN PROCESO";
+                p.FechaCreadafecha = DateOnly.FromDateTime(DateTime.Now);
+
+
+                context.Prestamos.Add(p);
+                context.SaveChanges();
+
+                TempData["Mensaje"] = "Solicitud de prestamo creada correctamente";
+                TempData["TipoMensaje"] = "success";
+                return RedirectToAction("NuevoPrestamo", "Home");
+            }
+            catch (Exception ex)
+            {
+                TempData["Mensaje"] = $"Ocurrió un error inesperado, {ex.Message}";
+                TempData["TipoMensaje"] = "danger";
+                return RedirectToAction("NuevoPrestamo", "Home");
+            }
+        }
+
+        /// <summary>
+        /// Apribacion de solicitud
+        /// </summary>
+        /// <param name="numeroSolicitud"></param>
+        /// <param name="observaciones"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public IActionResult AprobarSolicitud([FromForm] int numeroSolicitud, [FromForm] string observaciones)
+        {
+            try
+            {
+                // Validar que la solicitud existe
+                var solicitud = context.Prestamos.FirstOrDefault(p => p.Id == numeroSolicitud);
+                if (solicitud == null)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "La solicitud no existe."
+                    });
+                }
+
+                // Validar que la solicitud no esté ya aprobada
+                if (solicitud.Aprobado == 1)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "La solicitud ya está aprobada."
+                    });
+                }
+
+                // Validar que las observaciones no estén vacías
+                if (string.IsNullOrWhiteSpace(observaciones))
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Debe proporcionar observaciones para la aprobación."
+                    });
+                }
+
+                // Obtener el ID del usuario que está aprobando
+                var userId = HttpContext.Session.GetInt32("UsuarioId");
+
+                // Actualizar la solicitud con los datos de aprobación
+                solicitud.Aprobado = 1; // Marcar como aprobado
+                solicitud.DetalleAprobado = "APROBADO"; // Marcar como aprobado
+                solicitud.Observaciones = observaciones.Trim(); // Guardar observaciones
+                solicitud.Estado = "A"; // Cambiar estado a Aprobado
+                solicitud.DetalleRechazo = null; // Limpiar cualquier rechazo previo
+
+                // Opcional: Agregar campos de auditoría si los tienes
+                solicitud.FechaAprobacion = DateOnly.FromDateTime(DateTime.Now);
+                solicitud.AprobadoPor = userId;
+
+                // Guardar cambios en la base de datos
+                context.SaveChanges();
+
+                // Respuesta exitosa
+                return Json(new
+                {
+                    success = true,
+                    message = "La solicitud ha sido aprobada exitosamente.",
+                    data = new
+                    {
+                        numeroSolicitud = numeroSolicitud,
+                        observaciones = observaciones,
+                        fechaAprobacion = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
+                        estadoNuevo = "APROBADO"
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = $"Ocurrió un error inesperado al aprobar la solicitud: {ex.Message}"
+                });
+            }
+        }
+
+        /// <summary>
+        /// Rechaza una solicitud de prestamo con un motivo
+        /// </summary>
+        /// <param name="numeroSolicitud"></param>
+        /// <param name="motivoRechazo"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public IActionResult RechazarSolicitud([FromForm] int numeroSolicitud, [FromForm] string motivoRechazo)
+        {
+            try
+            {
+                // Validar que la solicitud existe
+                var solicitud = context.Prestamos.FirstOrDefault(p => p.Id == numeroSolicitud);
+                if (solicitud == null)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "La solicitud no existe."
+                    });
+                }
+
+                // Validar que la solicitud no esté ya aprobada
+                if (solicitud.Aprobado == 1)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "No se puede rechazar una solicitud ya aprobada."
+                    });
+                }
+
+                // Validar que el motivo no esté vacío
+                if (string.IsNullOrWhiteSpace(motivoRechazo))
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Debe proporcionar un motivo para el rechazo."
+                    });
+                }
+
+                // Validar longitud mínima del motivo
+                if (motivoRechazo.Trim().Length < 10)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "El motivo del rechazo debe tener al menos 10 caracteres."
+                    });
+                }
+
+                // Obtener el ID del usuario que está rechazando
+                var userId = HttpContext.Session.GetInt32("UsuarioId");
+
+                // Actualizar la solicitud con los datos de rechazo
+                solicitud.Aprobado = 0; // Mantener como no aprobado
+                solicitud.DetalleAprobado = "RECHAZADO"; // Marcar como rechazado
+                solicitud.DetalleRechazo = motivoRechazo.Trim(); // Guardar motivo del rechazo
+                solicitud.Estado = "R"; // Cambiar estado a Rechazado (puedes usar la letra que prefieras)
+
+                // Opcional: Agregar campos de auditoría si los tienes
+                solicitud.FechaRechazado = DateOnly.FromDateTime(DateTime.Now);
+                solicitud.RechazadoPor = userId;
+
+                // Guardar cambios en la base de datos
+                context.SaveChanges();
+
+                // Respuesta exitosa
+                return Json(new
+                {
+                    success = true,
+                    message = "La solicitud ha sido rechazada exitosamente.",
+                    data = new
+                    {
+                        numeroSolicitud = numeroSolicitud,
+                        motivoRechazo = motivoRechazo,
+                        fechaRechazo = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
+                        estadoNuevo = "RECHAZADO"
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = $"Ocurrió un error inesperado al rechazar la solicitud: {ex.Message}"
+                });
+            }
+        }
+
+
+
+        // ==================== MÉTODO REENVÍO SOLICITUD ====================
+        /// <summary>
+        /// Reeenvio de solicitud de prestamo para nueva evaluación.
+        /// </summary>
+        /// <param name="numeroSolicitud"></param>
+        /// <param name="comentarioReenvio"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public IActionResult ReenvioSolicitud([FromForm] int numeroSolicitud, [FromForm] string comentarioReenvio)
+        {
+            try
+            {
+                // Validar que la solicitud existe
+                var solicitud = context.Prestamos.FirstOrDefault(p => p.Id == numeroSolicitud);
+                if (solicitud == null)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "La solicitud no existe."
+                    });
+                }
+
+                // Validar que la solicitud esté previamente rechazada
+                if (solicitud.DetalleAprobado != "RECHAZADO")
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Solo se pueden reenviar solicitudes que hayan sido rechazadas previamente."
+                    });
+                }
+
+                // Validar que el comentario no esté vacío
+                if (string.IsNullOrWhiteSpace(comentarioReenvio))
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "Debe proporcionar un comentario para el reenvío."
+                    });
+                }
+
+                // Validar longitud mínima del comentario
+                if (comentarioReenvio.Trim().Length < 10)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "El comentario del reenvío debe tener al menos 10 caracteres."
+                    });
+                }
+
+                // Obtener el ID del usuario que está reenviando
+                var userId = HttpContext.Session.GetInt32("UsuarioId");
+
+                // Unir el motivo de rechazo anterior con el nuevo comentario
+                var motivoRechazoAnterior = solicitud.DetalleRechazo ?? "";
+                var nuevoDetalleRechazo = $"{motivoRechazoAnterior}\n\n--- REENVÍO ---\nFecha: {DateTime.Now:dd/MM/yyyy HH:mm}\nComentario: {comentarioReenvio.Trim()}";
+
+                // Actualizar la solicitud para reenvío
+                solicitud.Aprobado = 0; // Mantener como no aprobado
+                solicitud.DetalleAprobado = "EN PROCESO (REENVIO)"; // Cambiar estado a EN PROCESO para nueva evaluación
+                solicitud.DetalleRechazo = nuevoDetalleRechazo; // Conservar historial + nuevo comentario
+                solicitud.Estado = "P"; // Cambiar estado a Pendiente
+
+                // Opcional: Agregar campos de auditoría si los tienes
+                solicitud.FechaReenvio = DateOnly.FromDateTime(DateTime.Now);
+                solicitud.ReenviadoPor = userId;
+
+                // Limpiar campos de rechazo previo pero conservar en DetalleRechazo
+                solicitud.FechaRechazado = null;
+                solicitud.RechazadoPor = null;
+
+                // Guardar cambios en la base de datos
+                context.SaveChanges();
+
+                // Respuesta exitosa
+                return Json(new
+                {
+                    success = true,
+                    message = "La solicitud ha sido reenviada exitosamente para nueva evaluación.",
+                    data = new
+                    {
+                        numeroSolicitud = numeroSolicitud,
+                        comentarioReenvio = comentarioReenvio,
+                        fechaReenvio = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
+                        estadoNuevo = "EN PROCESO",
+                        historialCompleto = nuevoDetalleRechazo
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                // Log del error para debugging
+                // _logger.LogError(ex, "Error al reenviar solicitud {SolicitudId}", numeroSolicitud);
+
+                return Json(new
+                {
+                    success = false,
+                    message = $"Ocurrió un error inesperado al reenviar la solicitud: {ex.Message}"
+                });
+            }
+        }
+
+        /// <summary>
+        /// Proceso para desembolso de prestamo
+        /// </summary>
+        /// <param name="numeroSolicitud"></param>
+        /// <param name="observaciones"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> ProcesarDesembolso([FromForm] int numeroSolicitud, [FromForm] string observaciones)
+        {
+            try
+            {
+                var solicitud = await context.Prestamos
+                    .FirstOrDefaultAsync(p => p.Id == numeroSolicitud && p.Aprobado == 1 && p.DetalleAprobado == "APROBADO");
+
+                if (solicitud == null)
+                {
+                    return Json(new { success = false, message = "Solicitud no encontrada o no está disponible para desembolso" });
+                }
+
+                var userId = HttpContext.Session.GetInt32("UsuarioId") ?? 0;
+                var gestor = await context.Gestors
+                    .FirstOrDefaultAsync(g => g.Idusuario == userId);
+                // Cambiar estado a DESEMBOLSADO
+                solicitud.DetalleAprobado = "DESEMBOLSADO";
+                solicitud.Estado = "A"; // Activo
+                solicitud.Observaciones = observaciones;
+
+                // Crear registro de movimiento de desembolso
+                var movimientoDesembolso = new Pagosdetalle
+                {
+                    Idprestamo = solicitud.Id,
+                    FechaPago = DateOnly.FromDateTime(DateTime.Now),
+                    Numeropago = 0, // Para desembolsos usamos 0
+                    Monto = solicitud.Monto,
+                    Pagado = 1,
+                    FechaCouta = DateOnly.FromDateTime(DateTime.Now),
+                    Capital = solicitud.Monto,
+                    Interes = 0,
+                    Mora = 0,
+                    TipoMovimiento = "DESEMBOLSO",
+                    CreadoPor = userId
+                };
+
+                context.Pagosdetalles.Add(movimientoDesembolso);
+                await context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Desembolso procesado exitosamente",
+                    data = new
+                    {
+                        numeroSolicitud = numeroSolicitud,
+                        monto = solicitud.Monto,
+                        fecha = DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error al procesar desembolso: {ex.Message}" });
+            }
+        }
+
+
+        /// <summary>
+        /// Registro movimiento de pago
+        /// </summary>
+        /// <param name="p"></param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> RegistrarMovimiento([FromForm] Pagosdetalle p)
+        {
+            try
+            {
+                // Verificar que el préstamo existe
+                var prestamo = await context.Prestamos.FirstOrDefaultAsync(c => c.Id == p.Idprestamo);
+                if (prestamo == null)
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = $"No se encontró el préstamo en sistema"
+                    });
+                }
+
+                // Verificar que el préstamo está aprobado y desembolsado
+                if (prestamo.Aprobado != 1 || prestamo.DetalleAprobado != "DESEMBOLSADO")
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = $"El préstamo debe estar aprobado y desembolsado para registrar pagos"
+                    });
+                }
+
+                // Obtener el ID del usuario actual
+                var usuarioId = HttpContext.Session.GetInt32("UsuarioId") ?? 1;
+
+                // Configurar el registro de pago
+                p.CreadoPor = usuarioId;
+                p.FechaPago = DateOnly.FromDateTime(DateTime.Now);
+                p.Pagado = 1; // Marcar como pagado
+                p.TipoPago = p.TipoPago ?? "EFECTIVO"; // Valor por defecto
+
+                // Si no se especifica el número de pago, calcularlo automáticamente
+                if (p.Numeropago == null || p.Numeropago == 0)
+                {
+                    var ultimoPago = await context.Pagosdetalles
+                        .Where(pd => pd.Idprestamo == p.Idprestamo && pd.Numeropago > 0)
+                        .OrderByDescending(pd => pd.Numeropago)
+                        .FirstOrDefaultAsync();
+
+                    p.Numeropago = (ultimoPago?.Numeropago ?? 0) + 1;
+                }
+
+                // Agregar el registro
+                context.Pagosdetalles.Add(p);
+
+                // Verificar si el préstamo está completamente pagado
+                var totalCapitalPagado = await context.Pagosdetalles
+                    .Where(pd => pd.Idprestamo == p.Idprestamo && pd.Pagado == 1 && pd.Numeropago > 0)
+                    .SumAsync(pd => pd.Capital ?? 0);
+
+                totalCapitalPagado += (p.Capital ?? 0);
+
+                // Si se ha pagado todo el capital, marcar como cancelado
+                if (totalCapitalPagado >= prestamo.Monto)
+                {
+                    prestamo.Estado = "C"; // Cancelado
+                    prestamo.FechaCancelado = DateOnly.FromDateTime(DateTime.Now);
+                }
+
+                await context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "El pago se ha realizado con éxito.",
+                    data = new
+                    {
+                        NumeroPago = p.Id,
+                        NumeroCuota = p.Numeropago,
+                        Monto = p.Monto,
+                        EstadoPrestamo = prestamo.Estado == "C" ? "CANCELADO" : "ACTIVO",
+                        FechaPago = DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Error interno del servidor",
+                    error = ex.Message
+                });
+            }
+        }
+
+
+
+        // ===== MÉTODO ACTUALIZADO REGISTRAR COBRO =====
+        [HttpPost]
+        public async Task<IActionResult> RegistrarCobro([FromForm] int idPrestamo, [FromForm] int idCliente,
+            [FromForm] string concepto, [FromForm] decimal montoCapital, [FromForm] decimal montoInteres,
+            [FromForm] decimal montoMora, [FromForm] decimal montoTotal, [FromForm] int numeroCuota,
+            [FromForm] string metodoPago, [FromForm] string observaciones)
+        {
+            try
+            {
+                // Verificar que el préstamo existe y está activo
+                var prestamo = await context.Prestamos
+                    .FirstOrDefaultAsync(p => p.Id == idPrestamo && p.Aprobado == 1);
+                if (prestamo == null)
+                {
+                    return Json(new { success = false, message = "Préstamo no encontrado o no está activo" });
+                }
+
+                // Verificar que no se haya registrado ya esta cuota
+                var cuotaExistente = await context.Pagosdetalles
+                    .FirstOrDefaultAsync(p => p.Idprestamo == idPrestamo &&
+                                            p.Numeropago == numeroCuota &&
+                                            p.Pagado == 1);
+                if (cuotaExistente != null)
+                {
+                    return Json(new { success = false, message = $"La cuota #{numeroCuota} ya fue pagada anteriormente" });
+                }
+
+                var userId = HttpContext.Session.GetInt32("UsuarioId") ?? 1;
+                var gestor = await context.Gestors
+                    .FirstOrDefaultAsync(g => g.Idusuario == userId);
+                // 🗓️ CALCULAR LA FECHA DE LA CUOTA BASADA EN EL TIPO DE PRÉSTAMO
+                var fechaCuota = await ObtenerProximaFechaCuota(idPrestamo);
+
+                // Crear registro de cobro
+                var cobro = new Pagosdetalle
+                {
+                    Idprestamo = idPrestamo,
+                    FechaPago = DateOnly.FromDateTime(DateTime.Now), // Fecha real del pago
+                    Numeropago = numeroCuota,
+                    Monto = montoTotal,
+                    Pagado = 1,
+                    FechaCouta = fechaCuota, // 🗓️ Fecha calculada según tipo de préstamo
+                    Capital = montoCapital,
+                    Interes = montoInteres,
+                    Mora = montoMora,
+                    TipoPago = metodoPago,
+                    CreadoPor = gestor?.Id ?? 0,
+                };
+
+                context.Pagosdetalles.Add(cobro);
+
+                // 📅 ACTUALIZAR LA PRÓXIMA FECHA DE PAGO EN EL PRÉSTAMO
+                var siguienteFechaPago = await CalcularProximaFechaPago(
+                    idPrestamo,
+                    prestamo.TipoPrestamo,
+                    fechaCuota,
+                    numeroCuota + 1
+                );
+
+                prestamo.ProximoPago = siguienteFechaPago;
+
+                // Verificar si el préstamo está completamente pagado
+                var totalPagado = await context.Pagosdetalles
+                    .Where(p => p.Idprestamo == idPrestamo && p.Pagado == 1 && p.Numeropago > 0)
+                    .SumAsync(p => p.Capital ?? 0);
+
+                string estadoPrestamo = "ACTIVO";
+                if (totalPagado + montoCapital >= prestamo.Monto)
+                {
+                    prestamo.Estado = "C"; // Cancelado
+                    prestamo.FechaCancelado = DateOnly.FromDateTime(DateTime.Now);
+                    prestamo.ProximoPago = null; // Ya no hay próximo pago
+                    estadoPrestamo = "CANCELADO";
+                }
+
+                await context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Cobro registrado exitosamente",
+                    data = new
+                    {
+                        idCobro = cobro.Id,
+                        monto = montoTotal,
+                        fecha = DateTime.Now.ToString("dd/MM/yyyy HH:mm"),
+                        estadoPrestamo = estadoPrestamo,
+                        proximaFechaPago = prestamo.ProximoPago?.ToString("dd/MM/yyyy"),
+                        fechaCuotaCalculada = fechaCuota.ToString("dd/MM/yyyy")
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error al registrar cobro: {ex.Message}" });
+            }
+        }
+
+        // =====================================================
+        // NUEVO MÉTODO: Obtener préstamos con calendario real
+        // =====================================================
+
+        /// <summary>
+        /// Método para validar el corte de caja y actualizar el estado CorteCaja a true
+        /// </summary>
+        /// <param name="fechaCorte">Fecha del corte a validar</param>
+        /// <param name="idGestor">ID del gestor (opcional, si se quiere validar por gestor específico)</param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> ValidarCorteCaja(DateOnly fechaCorte, int? idGestor = null)
+        {
+            try
+            {
+                // Obtener el usuario actual de la sesión
+                var userId = HttpContext.Session.GetInt32("UsuarioId");
+                if (userId == null)
+                {
+                    return Json(new { success = false, message = "Usuario no autenticado" });
+                }
+
+                // Buscar todos los movimientos del día que no han sido validados
+                var movimientosQuery = context.Pagosdetalles
+                    .Where(d => d.FechaPago.HasValue &&
+                               d.FechaPago == fechaCorte &&
+                               d.Pagado == 1 &&
+                               (d.CorteCaja == null || d.CorteCaja == 0));
+
+                // Si se especifica un gestor, filtrar por él
+                if (idGestor.HasValue)
+                {
+                    movimientosQuery = movimientosQuery.Where(d => d.CreadoPor == idGestor.Value);
+                }
+
+                var movimientos = await movimientosQuery.ToListAsync();
+
+                if (!movimientos.Any())
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = "No se encontraron movimientos pendientes de validación para la fecha especificada"
+                    });
+                }
+
+                // Calcular totales antes de la validación
+                var totalIngresos = movimientos.Where(m => m.TipoMovimiento == "PAGO").Sum(m => m.Monto ?? 0);
+                var totalEgresos = movimientos.Where(m => m.TipoMovimiento == "DESEMBOLSO").Sum(m => m.Monto ?? 0);
+                var balanceNeto = totalIngresos - totalEgresos;
+
+                // Actualizar el estado CorteCaja a true para todos los movimientos
+                foreach (var movimiento in movimientos)
+                {
+                    movimiento.CorteCaja = 1;
+                }
+
+                // Guardar los cambios
+                await context.SaveChangesAsync();
+
+                // Obtener información del gestor para la respuesta
+                var gestorInfo = "";
+                if (idGestor.HasValue)
+                {
+                    var gestor = await context.Gestors.FindAsync(idGestor.Value);
+                    gestorInfo = gestor != null ? $" del gestor {gestor.Nombre} {gestor.Apellido}" : "";
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"Corte de caja validado exitosamente{gestorInfo}",
+                    data = new
+                    {
+                        fechaCorte = fechaCorte,
+                        movimientosValidados = movimientos.Count,
+                        totalIngresos = totalIngresos,
+                        totalEgresos = totalEgresos,
+                        balanceNeto = balanceNeto,
+                        validadoPor = userId,
+                        fechaValidacion = DateTime.Now
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Error al validar el corte de caja",
+                    error = ex.Message
+                });
+            }
+        }
+
+        public class ValidarCorteRequest
+        {
+            public DateOnly FechaCorte { get; set; }
+            public int IdGestor { get; set; }
+        }
+        /// <summary>
+        /// Método para validar el corte de caja de un gestor específico
+        /// </summary>
+        /// <param name="fechaCorte">Fecha del corte</param>
+        /// <param name="idGestor">ID del gestor</param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> ValidarCorteGestor([FromBody] ValidarCorteRequest request)
+        {
+            try
+            {
+                Console.WriteLine($"Validando corte de caja para el gestor {request.IdGestor} en la fecha {request.FechaCorte}");
+                var userId = HttpContext.Session.GetInt32("UsuarioId");
+                if (userId == null)
+                {
+                    return Json(new { success = false, message = "Usuario no autenticado" });
+                }
+
+                // Verificar que el gestor existe
+                var gestor = await context.Gestors.FindAsync(request.IdGestor);
+                if (gestor == null)
+                {
+                    return Json(new { success = false, message = "Gestor no encontrado" });
+                }
+
+                // Buscar movimientos del gestor en la fecha especificada
+                var movimientos = await context.Pagosdetalles
+                    .Where(d => d.FechaPago.HasValue &&
+                               d.FechaPago == request.FechaCorte &&
+                               d.Pagado == 1 &&
+                               d.CreadoPor == request.IdGestor &&
+                               (d.CorteCaja == null || d.CorteCaja == 0))
+                    .ToListAsync();
+
+                if (!movimientos.Any())
+                {
+                    return Json(new
+                    {
+                        success = false,
+                        message = $"No se encontraron movimientos pendientes de validación para el gestor {gestor.Nombre} {gestor.Apellido}"
+                    });
+                }
+
+                // Calcular totales del gestor
+                var totalIngresos = movimientos.Where(m => m.TipoMovimiento == "PAGO").Sum(m => m.Monto ?? 0);
+                var totalEgresos = movimientos.Where(m => m.TipoMovimiento == "DESEMBOLSO").Sum(m => m.Monto ?? 0);
+                var balanceNeto = totalIngresos - totalEgresos;
+
+                // Actualizar el estado CorteCaja a true
+                foreach (var movimiento in movimientos)
+                {
+                    movimiento.CorteCaja = 1;
+                }
+
+                await context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"Corte de caja validado exitosamente para {gestor.Nombre} {gestor.Apellido}",
+                    data = new
+                    {
+                        fechaCorte = request.FechaCorte,
+                        gestor = new
+                        {
+                            id = gestor.Id,
+                            nombre = $"{gestor.Nombre} {gestor.Apellido}"
+                        },
+                        movimientosValidados = movimientos.Count,
+                        totalIngresos = totalIngresos,
+                        totalEgresos = totalEgresos,
+                        balanceNeto = balanceNeto,
+                        validadoPor = userId,
+                        fechaValidacion = DateTime.Now
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Error al validar el corte de caja del gestor",
+                    error = ex.Message
+                });
+            }
+        }
+
+        // =====================================================
+        // NUEVO MÉTODO: Registrar pago usando calendario
+        // =====================================================
+
+        [HttpPost]
+        public async Task<IActionResult> RegistrarPagoConCalendario([FromForm] int idPrestamo, [FromForm] int numeroCuota,
+            [FromForm] decimal montoCapital, [FromForm] decimal montoInteres, [FromForm] decimal montoMora,
+            [FromForm] decimal montoTotal, [FromForm] string metodoPago, [FromForm] string observaciones)
+        {
+            try
+            {
+                var userId = HttpContext.Session.GetInt32("UsuarioId") ?? 1;
+                var gestor = await context.Gestors
+                    .FirstOrDefaultAsync(g => g.Idusuario == userId);
+                // Obtener la cuota del calendario
+                var cuotaCalendario = await context.CalendarioPagos
+                    .FirstOrDefaultAsync(cp => cp.IdPrestamo == idPrestamo && cp.NumeroCuota == numeroCuota);
+
+                if (cuotaCalendario == null)
+                {
+                    return Json(new { success = false, message = "Cuota no encontrada en el calendario de pagos" });
+                }
+
+                // Verificar que se pueda pagar
+                if (cuotaCalendario.Estado == "PAGADO")
+                {
+                    return Json(new { success = false, message = "Esta cuota ya fue pagada" });
+                }
+
+                // Crear registro en pagosdetalle
+                var detalleMovimiento = new Pagosdetalle
+                {
+                    Idprestamo = idPrestamo,
+                    FechaPago = DateOnly.FromDateTime(DateTime.Now),
+                    Numeropago = numeroCuota,
+                    Monto = montoTotal,
+                    Pagado = 1,
+                    FechaCouta = DateOnly.FromDateTime(DateTime.Now),
+                    Capital = montoCapital,
+                    Interes = montoInteres,
+                    Mora = montoMora,
+                    TipoPago = metodoPago,
+                    TipoMovimiento = "PAGO",
+                    CreadoPor = gestor?.Id ?? 0,
+                };
+
+                context.Pagosdetalles.Add(detalleMovimiento);
+                await context.SaveChangesAsync();
+
+                // Actualizar calendario de pagos
+                cuotaCalendario.FechaPagoReal = DateOnly.FromDateTime(DateTime.Now);
+                cuotaCalendario.MontoPagado = montoTotal;
+                cuotaCalendario.Capital = montoCapital;
+                cuotaCalendario.Interes = montoInteres;
+                cuotaCalendario.Mora = montoMora;
+                cuotaCalendario.Estado = montoTotal >= cuotaCalendario.MontoCuota ? "PAGADO" : "PARCIAL";
+                cuotaCalendario.Observaciones = observaciones;
+                cuotaCalendario.FechaActualizacion = DateTime.Now;
+
+                // Calcular días de mora si aplicaba
+                var fechaHoy = DateOnly.FromDateTime(DateTime.Today);
+                if (cuotaCalendario.FechaProgramada < fechaHoy)
+                {
+                    cuotaCalendario.DiasMora = fechaHoy.DayNumber - cuotaCalendario.FechaProgramada.DayNumber;
+                }
+
+                // Actualizar próximo pago en prestamos
+                var proximoPago = await context.CalendarioPagos
+                    .Where(cp => cp.IdPrestamo == idPrestamo && cp.Estado == "PENDIENTE")
+                    .OrderBy(cp => cp.FechaProgramada)
+                    .Select(cp => cp.FechaProgramada)
+                    .FirstOrDefaultAsync();
+
+                var prestamo = await context.Prestamos.FindAsync(idPrestamo);
+                if (prestamo != null)
+                {
+                    prestamo.ProximoPago = proximoPago;
+
+                    // Si no hay más cuotas pendientes, marcar como cancelado
+                    var cuotasPendientes = await context.CalendarioPagos
+                        .CountAsync(cp => cp.IdPrestamo == idPrestamo && cp.Estado == "PENDIENTE");
+
+                    if (cuotasPendientes == 0)
+                    {
+                        prestamo.Estado = "C"; // Cancelado/Completado
+                        prestamo.FechaCancelado = DateOnly.FromDateTime(DateTime.Now);
+                    }
+                }
+
+                await context.SaveChangesAsync();
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Pago registrado exitosamente",
+                    data = new
+                    {
+                        idCobro = detalleMovimiento.Id,
+                        numeroCuota = numeroCuota,
+                        montoTotal = montoTotal,
+                        estadoPrestamo = prestamo?.Estado,
+                        proximoPago = proximoPago
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error al registrar el pago: {ex.Message}" });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ActualizarPermisosPuesto([FromBody] ActualizarPermisosRequest request)
+        {
+            try
+            {
+                if (request?.PuestoId == null || request.Permisos == null)
+                {
+                    return BadRequest(new { success = false, message = "Datos inválidos" });
+                }
+
+                // Verificar que el puesto existe
+                var puestoExiste = await context.Puestos.AnyAsync(p => p.Id == request.PuestoId);
+                if (!puestoExiste)
+                {
+                    return NotFound(new { success = false, message = "Puesto no encontrado" });
+                }
+
+                // Obtener permisos actuales del puesto
+                var permisosActuales = await context.PuestoPermisos
+                    .Where(pp => pp.PuestoId == request.PuestoId)
+                    .ToListAsync();
+
+                // Procesar cada permiso
+                foreach (var permisoRequest in request.Permisos)
+                {
+                    var permisoExistente = permisosActuales.FirstOrDefault(pp => pp.PermisoId == permisoRequest.PermisoId);
+
+                    if (permisoExistente != null)
+                    {
+                        // Actualizar permiso existente
+                        permisoExistente.Activo = (ulong)permisoRequest.Activo;
+                    }
+                    else
+                    {
+                        // Crear nuevo permiso si está activo
+                        if (permisoRequest.Activo == 1)
+                        {
+                            var nuevoPermiso = new PuestoPermiso
+                            {
+                                PuestoId = request.PuestoId,
+                                PermisoId = permisoRequest.PermisoId,
+                                Activo = 1
+                            };
+                            context.PuestoPermisos.Add(nuevoPermiso);
+                        }
+                    }
+                }
+
+                await context.SaveChangesAsync();
+
+                return Ok(new { success = true, message = "Permisos actualizados correctamente" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { success = false, message = $"Error al actualizar permisos: {ex.Message}" });
+            }
+        }
+
+        // ===== CLASE PARA EL REQUEST (agregar al final del archivo AuxiliaresController.cs) =====
+        public class ActualizarPermisosRequest
+        {
+            public int PuestoId { get; set; }
+            public List<PermisoRequest> Permisos { get; set; } = new List<PermisoRequest>();
+        }
+
+        public class PermisoRequest
+        {
+            public int PermisoId { get; set; }
+            public int Activo { get; set; }
+        }
+
+        // ===== AGREGAR ESTE MÉTODO AL AuxiliaresController.cs =====
+
+        /// <summary>
+        /// Procesa la liquidación total de un préstamo
+        /// </summary>
+        /// <param name="request">Datos de la liquidación</param>
+        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> ProcesarLiquidacionTotal([FromForm] LiquidacionRequest request)
+        {
+            try
+            {
+                // Validar que el préstamo existe y está activo
+                var prestamo = await context.Prestamos
+                    .Include(p => p.IdclienteNavigation)
+                    .FirstOrDefaultAsync(p => p.Id == request.IdPrestamo && p.Estado == "A");
+
+                if (prestamo == null)
+                {
+                    return Json(new { success = false, message = "Préstamo no encontrado o no está activo" });
+                }
+
+                // Verificar que el préstamo está aprobado y desembolsado
+                if (prestamo.Aprobado != 1 || prestamo.DetalleAprobado != "DESEMBOLSADO")
+                {
+                    return Json(new { success = false, message = "El préstamo debe estar aprobado y desembolsado" });
+                }
+
+                // Obtener pagos realizados para calcular saldos
+                var pagosRealizados = await context.Pagosdetalles
+                    .Where(p => p.Idprestamo == request.IdPrestamo && p.Pagado == 1 && p.TipoMovimiento != "DESEMBOLSO")
+                    .ToListAsync();
+
+                // Calcular saldos
+                var capitalPagado = pagosRealizados.Sum(p => p.Capital ?? 0);
+                var saldoCapital = (prestamo.Monto ?? 0) - capitalPagado;
+
+                // Validar que hay saldo pendiente
+                if (saldoCapital <= 0)
+                {
+                    return Json(new { success = false, message = "El préstamo ya está completamente pagado" });
+                }
+
+                // Calcular interés pendiente
+                var interesPagado = pagosRealizados.Sum(p => p.Interes ?? 0);
+                var interesTotal = prestamo.Interes ?? 0;
+                var interesPendiente = Math.Max(0, interesTotal - interesPagado);
+
+                // Aplicar descuento del 10% en intereses (configurable)
+                var descuentoInteres = interesPendiente * 0.10m;
+                var interesConDescuento = interesPendiente - descuentoInteres;
+
+                // Total de liquidación
+                var totalLiquidacion = saldoCapital + interesConDescuento;
+
+                // Obtener información del usuario actual
+                var userId = HttpContext.Session.GetInt32("UsuarioId") ?? 1;
+                var gestor = await context.Gestors
+                    .FirstOrDefaultAsync(g => g.Idusuario == userId);
+
+                // Crear el registro de liquidación en pagosdetalle
+                var registroLiquidacion = new Pagosdetalle
+                {
+                    Idprestamo = request.IdPrestamo,
+                    FechaPago = DateOnly.FromDateTime(DateTime.Now),
+                    Numeropago = 999, // Número especial para liquidaciones
+                    Monto = totalLiquidacion,
+                    Pagado = 1,
+                    FechaCouta = DateOnly.FromDateTime(DateTime.Now),
+                    Capital = saldoCapital,
+                    Interes = interesConDescuento,
+                    Mora = 0,
+                    Domicilio = 0,
+                    TipoPago = "LIQUIDACION_TOTAL",
+                    TipoMovimiento = "COBRO",
+                    ObservacionesMovimiento = $"LIQUIDACIÓN TOTAL - {request.Observaciones}. Descuento aplicado: ${descuentoInteres:F2}",
+                    CreadoPor = gestor?.Id ?? 0,
+                    FechaCreacion = DateTime.Now
+                };
+
+                // Agregar el registro
+                context.Pagosdetalles.Add(registroLiquidacion);
+
+                // Actualizar el estado del préstamo
+                prestamo.Estado = "C"; // Cancelado
+                prestamo.FechaCancelado = DateOnly.FromDateTime(DateTime.Now);
+                prestamo.ProximoPago = null; // Ya no hay próximo pago
+
+                // Guardar todos los cambios
+                await context.SaveChangesAsync();
+
+                // Preparar respuesta con detalles de la liquidación
+                var respuesta = new
+                {
+                    success = true,
+                    message = "Liquidación procesada exitosamente",
+                    data = new
+                    {
+                        idLiquidacion = registroLiquidacion.Id,
+                        numeroPrestamo = request.IdPrestamo,
+                        cliente = $"{prestamo.IdclienteNavigation?.Nombre} {prestamo.IdclienteNavigation?.Apellido}",
+                        montoOriginal = prestamo.Monto,
+                        capitalPendiente = saldoCapital,
+                        interesPendienteOriginal = interesPendiente,
+                        descuentoAplicado = descuentoInteres,
+                        interesConDescuento = interesConDescuento,
+                        totalLiquidado = totalLiquidacion,
+                        fechaLiquidacion = DateTime.Now,
+                        ahorroCliente = descuentoInteres,
+                        // Estadísticas finales
+                        estadisticas = new
+                        {
+                            capitalTotalPagado = capitalPagado + saldoCapital,
+                            interesTotalPagado = interesPagado + interesConDescuento,
+                            totalPagadoPrestamo = prestamo.Monto + interesPagado + interesConDescuento,
+                            descuentoTotal = descuentoInteres,
+                            estadoFinal = "LIQUIDADO"
+                        }
+                    }
+                };
+
+                return Json(respuesta);
+            }
+            catch (Exception ex)
+            {
+                // Log del error
+                Console.WriteLine($"Error en liquidación: {ex.Message}");
+
+                return Json(new
+                {
+                    success = false,
+                    message = "Error interno al procesar la liquidación",
                     error = ex.Message
                 });
             }

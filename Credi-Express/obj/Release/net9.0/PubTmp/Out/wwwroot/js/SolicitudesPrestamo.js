@@ -1,5 +1,6 @@
 ﻿let tabla;
 let solicitudActual = null;
+let solicitudEditando = null;
 
 $(document).ready(function () {
     // Establecer fechas por defecto al cargar la página
@@ -193,8 +194,201 @@ function detalle(rowIndex) {
     // Limpiar observaciones previas
     $('#observacionesAprobacion').val('');
 
+
+    configurarBotonEditar(rowData);
     // Mostrar el modal
     $('#modalDetalleSolicitud').modal('show');
+}
+
+
+// ==================== CONFIGURAR BOTÓN EDITAR ====================
+function configurarBotonEditar(rowData) {
+    // Mostrar botón editar solo si la solicitud no está aprobada
+    const puedeEditar = !rowData.aprobado;
+
+    if (puedeEditar) {
+        // Agregar botón editar si no existe
+        if ($('#btnEditarSolicitud').length === 0) {
+            const botonEditar = `
+                <button type="button" class="btn btn-warning btn-sm me-2" id="btnEditarSolicitud">
+                    <i class="fas fa-edit me-1"></i>Modificar
+                </button>
+            `;
+
+            // Insertar antes del botón aprobar o al inicio del footer
+            if ($('#btnAprobar').length > 0) {
+                $('#btnAprobar').before(botonEditar);
+            } else {
+                $('.modal-footer').prepend(botonEditar);
+            }
+        }
+        $('#btnEditarSolicitud').show();
+    } else {
+        $('#btnEditarSolicitud').hide();
+    }
+}
+
+
+// ==================== EVENTO BOTÓN EDITAR ====================
+$(document).on('click', '#btnEditarSolicitud', function () {
+    if (solicitudActual) {
+        abrirModalEdicion(solicitudActual);
+        $('#modalDetalleSolicitud').modal('hide');
+    }
+});
+
+// ==================== ABRIR MODAL DE EDICIÓN ====================
+function abrirModalEdicion(solicitudData) {
+    solicitudEditando = solicitudData;
+
+    // Llenar campos del modal
+    $('#editNumSolicitud').text(solicitudData.id);
+    $('#editNombreCliente').text(solicitudData.nombreCliente);
+    $('#editIdSolicitud').val(solicitudData.id);
+    $('#editMonto').val(solicitudData.monto);
+    $('#editNumCuotas').val(solicitudData.numCoutas);
+    $('#editTasa').val(solicitudData.tasa);
+    $('#editTasaDomicilio').val(solicitudData.tasaDomicilio);
+    $('#editMotivo').val('');
+
+    // Calcular valores iniciales
+    calcularValoresEdicion();
+
+    // Mostrar modal
+    $('#modalEditarSolicitud').modal('show');
+}
+
+// ==================== CALCULAR VALORES EN TIEMPO REAL ====================
+function calcularValoresEdicion() {
+    const monto = parseFloat($('#editMonto').val()) || 0;
+    const tasa = parseFloat($('#editTasa').val()) || 0;
+    const tasaDomicilio = parseFloat($('#editTasaDomicilio').val()) || 0;
+    const cuotas = parseInt($('#editNumCuotas').val()) || 1;
+
+    if (monto > 0 && cuotas > 0) {
+        const interes = monto * (tasa / 100) * cuotas;
+        const domicilio = monto * (tasaDomicilio / 100) * cuotas;
+        const total = monto + interes + domicilio;
+        const cuota = total / cuotas;
+
+        $('#calcInteres').text('$' + interes.toFixed(2));
+        $('#calcDomicilio').text('$' + domicilio.toFixed(2));
+        $('#calcTotal').text('$' + total.toFixed(2));
+        $('#calcCuota').text('$' + cuota.toFixed(2));
+    } else {
+        $('#calcInteres').text('$0.00');
+        $('#calcDomicilio').text('$0.00');
+        $('#calcTotal').text('$0.00');
+        $('#calcCuota').text('$0.00');
+    }
+}
+
+
+
+// Recalcular en tiempo real
+$(document).on('input', '#editMonto, #editTasa, #editTasaDomicilio, #editNumCuotas', calcularValoresEdicion);
+
+// ==================== VALIDAR FORMULARIO ====================
+function validarFormularioEdicion() {
+    const monto = parseFloat($('#editMonto').val());
+    const tasa = parseFloat($('#editTasa').val());
+    const tasaDomicilio = parseFloat($('#editTasaDomicilio').val());
+    const cuotas = parseInt($('#editNumCuotas').val());
+    const motivo = $('#editMotivo').val().trim();
+
+    if (!monto || monto < 100 || monto > 50000) {
+        Swal.fire('Error', 'El monto debe estar entre $100 y $50,000', 'error');
+        return false;
+    }
+    if (!tasa || tasa < 0.5 || tasa > 50) {
+        Swal.fire('Error', 'La tasa de interés debe estar entre 0.5% y 50%', 'error');
+        return false;
+    }
+    if (tasaDomicilio < 0 || tasaDomicilio > 20) {
+        Swal.fire('Error', 'La tasa de domicilio debe estar entre 0% y 20%', 'error');
+        return false;
+    }
+    if (!cuotas || cuotas < 1 || cuotas > 60) {
+        Swal.fire('Error', 'El número de cuotas debe estar entre 1 y 60', 'error');
+        return false;
+    }
+    if (!motivo || motivo.length < 10) {
+        Swal.fire('Error', 'El motivo debe tener al menos 10 caracteres', 'error');
+        return false;
+    }
+    return true;
+}
+
+// ==================== GUARDAR CAMBIOS ====================
+$(document).on('click', '#btnGuardarCambios', function () {
+    if (!validarFormularioEdicion()) return;
+
+    const datosEdit = {
+        idSolicitud: $('#editIdSolicitud').val(),
+        monto: parseFloat($('#editMonto').val()),
+        numCuotas: parseInt($('#editNumCuotas').val()),
+        tasa: parseFloat($('#editTasa').val()),
+        tasaDomicilio: parseFloat($('#editTasaDomicilio').val()),
+        motivo: $('#editMotivo').val().trim()
+    };
+
+    // Confirmar cambios
+    Swal.fire({
+        title: '¿Confirmar Modificaciones?',
+        html: `
+            <div class="text-start">
+                <p><strong>Se modificarán:</strong></p>
+                <ul>
+                    <li>Monto: $${datosEdit.monto.toFixed(2)}</li>
+                    <li>Cuotas: ${datosEdit.numCuotas}</li>
+                    <li>Tasa Interés: ${datosEdit.tasa}%</li>
+                    <li>Tasa Domicilio: ${datosEdit.tasaDomicilio}%</li>
+                </ul>
+                <p><strong>Motivo:</strong> ${datosEdit.motivo}</p>
+            </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Guardar Cambios',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            guardarModificaciones(datosEdit);
+        }
+    });
+});
+
+// ==================== ENVIAR AL SERVIDOR ====================
+function guardarModificaciones(datos) {
+    Swal.fire({
+        title: 'Guardando...',
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    $.ajax({
+        url: '/Auxiliares/EditarSolicitudPrestamo',
+        type: 'POST',
+        data: datos,
+        success: function (response) {
+            if (response.success) {
+                Swal.fire({
+                    title: 'Éxito',
+                    text: 'La solicitud ha sido actualizada',
+                    icon: 'success'
+                }).then(() => {
+                    $('#modalEditarSolicitud').modal('hide');
+                    $('#btnFiltrar').trigger('click'); // Recargar tabla
+                });
+            } else {
+                Swal.fire('Error', response.message || 'Error al guardar', 'error');
+            }
+        },
+        error: function (xhr, status, error) {
+            Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+        }
+    });
 }
 
 // Limpiar datos al cerrar el modal
@@ -243,25 +437,52 @@ $(document).ready(function () {
         });
     });
 
-    // ==================== BOTÓN RECHAZAR ====================
-    $('#btnRechazar').on('click', function () {
-        // Obtener datos antes de cerrar el modal
+    // ==================== MEJORAR RECHAZO (OPCIONAL) ====================
+    // Reemplazar tu evento del botón rechazar existente con este:
+    $('#btnRechazar').off('click').on('click', function () {
         const numeroSolicitud = $('#modalNumSolicitud').text();
         const nombreCliente = $('#modalCliente').text();
 
-        // Cerrar el modal primero
         $('#modalDetalleSolicitud').modal('hide');
 
-        // Esperar a que el modal se cierre completamente y abrir SweetAlert
         $('#modalDetalleSolicitud').on('hidden.bs.modal', function () {
-            // Remover el event listener para evitar múltiples llamadas
             $(this).off('hidden.bs.modal');
-
-            // Pequeño delay para asegurar que el modal se cerró completamente
             setTimeout(() => {
-                mostrarAlertaRechazo(numeroSolicitud, nombreCliente);
+                // Dar opción de modificar o rechazar directamente
+                Swal.fire({
+                    title: '¿Qué desea hacer?',
+                    html: `
+                    <p><strong>Solicitud:</strong> ${numeroSolicitud}</p>
+                    <p><strong>Cliente:</strong> ${nombreCliente}</p>
+                `,
+                    icon: 'question',
+                    showDenyButton: true,
+                    showCancelButton: true,
+                    confirmButtonText: 'Modificar Solicitud',
+                    denyButtonText: 'Rechazar Directamente',
+                    cancelButtonText: 'Volver'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (solicitudActual) abrirModalEdicion(solicitudActual);
+                    } else if (result.isDenied) {
+                        mostrarAlertaRechazo(numeroSolicitud, nombreCliente); // Tu función existente
+                    } else {
+                        $('#modalDetalleSolicitud').modal('show');
+                    }
+                });
             }, 200);
         });
+    });
+
+    // ==================== LIMPIAR AL CERRAR ====================
+    $('#modalEditarSolicitud').on('hidden.bs.modal', function () {
+        $('#formEditarSolicitud')[0].reset();
+        solicitudEditando = null;
+    });
+
+    $('#modalDetalleSolicitud').on('hidden.bs.modal', function () {
+        solicitudActual = null;
+        $('#btnEditarSolicitud').remove(); // Limpiar botón dinámico
     });
 
     // ==================== FUNCIÓN ALERTA APROBACIÓN ====================

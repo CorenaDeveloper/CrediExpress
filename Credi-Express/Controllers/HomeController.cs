@@ -239,7 +239,7 @@ namespace Credi_Express.Controllers
 
             var permisos = (from pp in context.PuestoPermisos
                             join p in context.Permisos on pp.PermisoId equals p.Id
-                            where pp.PuestoId == gestor.Idpuesto && pp.Activo == 1  // 🔧 CORREGIDO
+                            where pp.PuestoId == gestor.Idpuesto && pp.Activo == 1
                             select new
                             {
                                 Id = pp.Id,
