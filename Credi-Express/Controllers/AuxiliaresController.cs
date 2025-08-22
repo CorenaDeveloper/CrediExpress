@@ -1804,7 +1804,7 @@ namespace Credi_Express.Controllers
         [HttpPost]
         public IActionResult EditarSolicitudPrestamo([FromForm] int idSolicitud, [FromForm] decimal monto,
             [FromForm] int numCuotas, [FromForm] decimal tasa, [FromForm] decimal tasaDomicilio,
-            [FromForm] string motivo)
+            [FromForm] string motivo, [FromForm] decimal montoCuota)
         {
             try
             {
@@ -1852,6 +1852,7 @@ namespace Credi_Express.Controllers
                 solicitud.NumCoutas = numCuotas;
                 solicitud.Tasa = tasa;
                 solicitud.TasaDomicilio = tasaDomicilio;
+                solicitud.Cuota = montoCuota;
                 //solicitud.cou = nuevaCuota;
 
                 // Agregar motivo a observaciones
@@ -2533,7 +2534,7 @@ namespace Credi_Express.Controllers
                 solicitud.DetalleAprobado = "APROBADO"; // Marcar como aprobado
                 solicitud.Observaciones = observaciones.Trim(); // Guardar observaciones
                 solicitud.Estado = "A"; // Cambiar estado a Aprobado
-                solicitud.DetalleRechazo = null; // Limpiar cualquier rechazo previo
+                //solicitud.DetalleRechazo = null; // Limpiar cualquier rechazo previo
 
                 // Opcional: Agregar campos de auditoría si los tienes
                 solicitud.FechaAprobacion = DateOnly.FromDateTime(DateTime.Now);
@@ -2769,10 +2770,10 @@ namespace Credi_Express.Controllers
         /// Proceso para desembolso de prestamo
         /// </summary>
         /// <param name="numeroSolicitud"></param>
-        /// <param name="observaciones"></param>
+        /// <param name="tpago"></param>
         /// <returns></returns>
         [HttpPost]
-        public async Task<IActionResult> ProcesarDesembolso([FromForm] int numeroSolicitud, [FromForm] string observaciones)
+        public async Task<IActionResult> ProcesarDesembolso([FromForm] int numeroSolicitud, [FromForm] string tipoPago)
         {
             try
             {
@@ -2790,7 +2791,7 @@ namespace Credi_Express.Controllers
                 // Cambiar estado a DESEMBOLSADO
                 solicitud.DetalleAprobado = "DESEMBOLSADO";
                 solicitud.Estado = "A"; // Activo
-                solicitud.Observaciones = observaciones;
+                //solicitud.Observaciones = tpago;
 
                 // Crear registro de movimiento de desembolso
                 var movimientoDesembolso = new Pagosdetalle
@@ -2805,7 +2806,8 @@ namespace Credi_Express.Controllers
                     Interes = 0,
                     Mora = 0,
                     TipoMovimiento = "DESEMBOLSO",
-                    CreadoPor = userId
+                    CreadoPor = userId,
+                    TipoPago = tipoPago
                 };
 
                 context.Pagosdetalles.Add(movimientoDesembolso);

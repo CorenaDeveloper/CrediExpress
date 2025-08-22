@@ -94,7 +94,7 @@ $(document).ready(function () {
 
     function confirmarDesembolso() {
         const numeroSolicitud = $('#numeroSolicitud').val();
-        const observaciones = $('#observacionesDesembolso').val();
+        const tipoPago = $('#observacionesDesembolso').val();
 
         Swal.fire({
             title: '¿Confirmar Desembolso?',
@@ -107,12 +107,12 @@ $(document).ready(function () {
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if (result.isConfirmed) {
-                procesarDesembolso(numeroSolicitud, observaciones);
+                procesarDesembolso(numeroSolicitud, tipoPago);
             }
         });
     }
 
-    function procesarDesembolso(numeroSolicitud, observaciones) {
+    function procesarDesembolso(numeroSolicitud, tipoPago) {
         // Mostrar loading
         Swal.fire({
             title: 'Procesando...',
@@ -129,7 +129,7 @@ $(document).ready(function () {
             method: 'POST',
             data: {
                 numeroSolicitud: numeroSolicitud,
-                observaciones: observaciones
+                tipoPago: tipoPago
             },
             success: function (response) {
                 if (response.success) {

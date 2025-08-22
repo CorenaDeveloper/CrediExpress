@@ -29,25 +29,6 @@
             transform: translateY(-2px);
         }
 
-    .stat-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 15px;
-    }
-
-        .stat-card.success {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-
-        .stat-card.warning {
-            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-            color: #333;
-        }
-
-        .stat-card.danger {
-            background: linear-gradient(135deg, #ff8a80 0%, #ff5722 100%);
-        }
-
     .main-action-btn {
         border-radius: 15px;
         padding: 20px;
@@ -118,7 +99,6 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2 class="mb-1"><i class="fas fa-cash-register me-2 text-primary"></i>Pagos a la Vista</h2>
                     <p class="text-muted mb-0">Gestión de desembolsos y cobros diarios</p>
                 </div>
                 <div>
@@ -133,44 +113,65 @@
 
     <!-- Dashboard Cards -->
     <div class="row mb-4">
-@*         <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card stat-card">
-                <div class="card-body text-center">
-                    <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
-                    <h3 class="mb-1" id="totalEfectivo">$0.00</h3>
-                    <p class="mb-0">Efectivo Disponible</p>
-                </div>
-            </div>
-        </div> *@
-        <div class="col-lg-4 col-md-6 mb-3">
-            <div class="card stat-card success">
-                <div class="card-body text-center">
-                    <i class="fas fa-arrow-up fa-2x mb-2"></i>
-                    <h3 class="mb-1" id="ingresosDia">$0.00</h3>
-                    <p class="mb-0">Ingresos del Día</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4 col-md-6 mb-3">
-            <div class="card stat-card warning">
-                <div class="card-body text-center">
-                    <i class="fas fa-arrow-down fa-2x mb-2"></i>
-                    <h3 class="mb-1" id="egresosDia">$0.00</h3>
-                    <p class="mb-0">Egresos del Día</p>
+        <div class="col-sm-6 col-md-4">
+            <div class="card card-stats card-round">
+                <div class="card-body ">
+                    <div class="row align-items-center">
+                        <div class="col-icon">
+                            <div class="icon-big text-center icon-primary bubble-shadow-small">
+                                <i class="fas fa-arrow-up fa-2x mb-2"></i>
+                            </div>
+                        </div>
+                        <div class="col col-stats ms-3 ms-sm-0">
+                            <div class="numbers">
+                                <p class="card-category">Ingresos</p>
+                                <h4 class="card-title" id="ingresosDia">$0.00</h4>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-lg-4 col-md-6 mb-3">
-            <div class="card stat-card danger">
-                <div class="card-body text-center">
-                    <i class="fas fa-hand-holding-usd fa-2x mb-2"></i>
-                    <h3 class="mb-1" id="totalMovimientos">0</h3>
-                    <p class="mb-0">Movimientos del Día</p>
+        <div class="col-sm-6 col-md-4">
+            <div class="card card-stats card-round">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-icon">
+                            <div class="icon-big text-center icon-info bubble-shadow-small">
+                                <i class="fas fa-arrow-down fa-2x mb-2"></i>
+                            </div>
+                        </div>
+                        <div class="col col-stats ms-3 ms-sm-0">
+                            <div class="numbers">
+                                <p class="card-category">Egresos</p>
+                                <h4 class="card-title" id="egresosDia">$0.00</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-md-4">
+            <div class="card card-stats card-round">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-icon">
+                            <div class="icon-big text-center icon-success bubble-shadow-small">
+                                <i class="fas fa-luggage-cart"></i>
+                            </div>
+                        </div>
+                        <div class="col col-stats ms-3 ms-sm-0">
+                            <div class="numbers">
+                                <p class="card-category">Movimientos</p>
+                                <h4 class="card-title" id="totalMovimientos">0</h4>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
+    <!-- Fin Dashboard Cards -->
 
 
     <div class="row mb-4">
@@ -207,14 +208,6 @@
                 <i class="fas fa-list me-2"></i>Movimientos del Día
                 <span class="badge bg-secondary ms-2" id="contadorMovimientos">0</span>
             </h5>
-@*             <div>
-                <button class="btn btn-outline-success btn-sm me-2" id="btnActualizar">
-                    <i class="fas fa-refresh me-1"></i>Actualizar
-                </button>
-                <button class="btn btn-outline-primary btn-sm" id="btnExportar">
-                    <i class="fas fa-download me-1"></i>Exportar
-                </button>
-            </div> *@
         </div>
         <div class="card-body">
             <!-- Filtros -->
@@ -334,7 +327,7 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">
-                            <i class="fas fa-sticky-note me-1"></i>Observaciones del Desembolso
+                            <i class="fas fa-sticky-note me-1"></i>Tipo de Desembolso
                         </label>
                         <select class="form-select form-select-lg" id="observacionesDesembolso" required>
                             <option value="">Seleccione método</option>
@@ -343,11 +336,6 @@
                             <option value="CHEQUE">📄 Cheque</option>
                             <option value="DEPOSITO">💳 Depósito Bancario</option>
                         </select>
-@*                         <textarea class="form-control" id="observacionesDesembolso" rows="3"
-                                  placeholder="Detalles del desembolso (opcional)..."></textarea>
-                        <small class="text-muted">
-                            Ej: Entregado en efectivo, transferencia bancaria, etc.
-                        </small> *@
                     </div>
                 </div>
 

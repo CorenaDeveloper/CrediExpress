@@ -107,6 +107,19 @@ namespace Credi_Express.Controllers
             return View();
         }
 
+
+        ///[RequierePermiso("Home/NuevoPrestamo", "Read")]
+        public IActionResult PrestamosXCliente()
+        {
+            var userId = HttpContext.Session.GetInt32("UsuarioId");
+            if (!userId.HasValue)
+            {
+                return RedirectToAction("PrestamosXCliente", "Home");
+            }
+
+            return View();
+        }
+
         [RequierePermiso("Home/Calendario", "Read")]
         public async Task<IActionResult> Calendario()
         {

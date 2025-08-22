@@ -84,12 +84,14 @@ $(document).ready(function () {
                             "render": function (data, type, row, meta) {
                                 if (data && row.detalleAprobado === "APROBADO") {
                                     return `<span class="badge badge-success">${row.detalleAprobado}</span>`
+                                } else if (row.detalleAprobado === "EN PROCESO") {
+                                    return `<span class="badge badge-info">${row.detalleAprobado}</span>`;
+                                } else if (row.detalleAprobado === "EN PROCESO (REENVIO)") {
+                                    return `<span class="badge badge-warning">${row.detalleAprobado}</span>`
                                 } else if (data && row.detalleAprobado === "DESEMBOLSADO") {
                                     return `<span class="badge badge-primary">${row.detalleAprobado}</span>`
-                                }
-                                else if (row.detalleAprobado === "EN PROCESO") {
-                                    return `<span class="badge badge-warning">${row.detalleAprobado}</span>`;
-                                } else {
+                                } 
+                                else {
                                     return `<span class="badge badge-danger">${row.detalleAprobado}</span>`;
                                 }
                                
@@ -170,12 +172,21 @@ function detalle(rowIndex) {
         $('#btnRechazar').show();
         $('#btnReenvio').hide();
         $('#btnImprimirPagare').hide();
+        $('#btnImprimirManifiesto').hide();
     } else if (!rowData.aprobado && rowData.detalleAprobado === "RECHAZADO") {
         $('#seccionAprobacion').hide();
         $('#btnAprobar').hide();
         $('#btnRechazar').hide();
         $('#btnReenvio').show();
         $('#btnImprimirPagare').hide();
+        $('#btnImprimirManifiesto').hide();
+    } else if (!rowData.aprobado && rowData.detalleAprobado === "EN PROCESO (REENVIO)") {
+        $('#seccionAprobacion').show();
+        $('#btnAprobar').show();
+        $('#btnRechazar').show();
+        $('#btnReenvio').hide();
+        $('#btnImprimirPagare').hide();
+        $('#btnImprimirManifiesto').hide();
     }
     else if (rowData.aprobado) {
         $('#seccionAprobacion').hide();
@@ -183,12 +194,14 @@ function detalle(rowIndex) {
         $('#btnRechazar').hide();
         $('#btnReenvio').hide();
         $('#btnImprimirPagare').show();
+        $('#btnImprimirManifiesto').show();
     } else {
         $('#seccionAprobacion').hide();
         $('#btnAprobar').hide();
         $('#btnRechazar').hide();
         $('#btnReenvio').show();
         $('#btnImprimirPagare').hide();
+        $('#btnImprimirManifiesto').hide();
     }
 
     // Limpiar observaciones previas
@@ -210,11 +223,10 @@ function configurarBotonEditar(rowData) {
         // Agregar botón editar si no existe
         if ($('#btnEditarSolicitud').length === 0) {
             const botonEditar = `
-                <button type="button" class="btn btn-warning btn-sm me-2" id="btnEditarSolicitud">
+                <button type="button" class="btn btn-warning me-2" id="btnEditarSolicitud">
                     <i class="fas fa-edit me-1"></i>Modificar
                 </button>
             `;
-
             // Insertar antes del botón aprobar o al inicio del footer
             if ($('#btnAprobar').length > 0) {
                 $('#btnAprobar').before(botonEditar);
@@ -261,67 +273,87 @@ function abrirModalEdicion(solicitudData) {
 // ==================== CALCULAR VALORES EN TIEMPO REAL ====================
 function calcularValoresEdicion() {
     const monto = parseFloat($('#editMonto').val()) || 0;
-    const tasa = parseFloat($('#editTasa').val()) || 0;
+    const tasaInteresMensual = parseFloat($('#editTasa').val()) || 0;
     const tasaDomicilio = parseFloat($('#editTasaDomicilio').val()) || 0;
     const cuotas = parseInt($('#editNumCuotas').val()) || 1;
 
-    if (monto > 0 && cuotas > 0) {
-        const interes = monto * (tasa / 100) * cuotas;
-        const domicilio = monto * (tasaDomicilio / 100) * cuotas;
-        const total = monto + interes + domicilio;
-        const cuota = total / cuotas;
+    const tipoPrestamo = $('#txtTipoPrestamo').text().trim().toUpperCase();
 
-        $('#calcInteres').text('$' + interes.toFixed(2));
-        $('#calcDomicilio').text('$' + domicilio.toFixed(2));
-        $('#calcTotal').text('$' + total.toFixed(2));
-        $('#calcCuota').text('$' + cuota.toFixed(2));
+    if (monto > 0 && cuotas > 0) {
+        // Usar la misma lógica que calcularCuota()
+        let baseInteres = 0;
+        let interesxTiempo = 0;
+        let baseDomicilio = 0;
+        let domicilioxTiempo = 0;
+
+        switch (tipoPrestamo.toUpperCase()) {
+            case 'DIARIO':
+                // Interés aplicado tasa diaria
+                baseInteres = (tasaInteresMensual / 100) / cuotas;
+                interesxTiempo = baseInteres * cuotas;
+                // Domicilio aplicado a tasa diaria
+                baseDomicilio = (tasaDomicilio / 100) / cuotas;
+                domicilioxTiempo = baseDomicilio * cuotas;
+                break;
+
+            case 'SEMANAL':
+                // Interés mensual equivalente a 4 semanas
+                baseInteres = (tasaInteresMensual / 100) / 4;
+                interesxTiempo = baseInteres * cuotas;
+                // Domicilio mensual equivalente a 4 semanas
+                baseDomicilio = (tasaDomicilio / 100) / 4;
+                domicilioxTiempo = baseDomicilio * cuotas;
+                break;
+
+            case 'QUINCENAL':
+                // Interés mensual equivalente a 2 semanas
+                baseInteres = (tasaInteresMensual / 100) / 2;
+                interesxTiempo = baseInteres * cuotas;
+                // Domicilio mensual equivalente a 2 semanas
+                baseDomicilio = (tasaDomicilio / 100) / 2;
+                domicilioxTiempo = baseDomicilio * cuotas;
+                break;
+
+            case 'MENSUAL':
+            default:
+                // Interés mensual
+                baseInteres = (tasaInteresMensual / 100) / 1;
+                interesxTiempo = baseInteres * cuotas;
+                // Domicilio 
+                baseDomicilio = (tasaDomicilio / 100) / 1;
+                domicilioxTiempo = baseDomicilio * cuotas;
+                break;
+        }
+
+        // Total a pagar (igual que en calcularCuota)
+        const interesTotal = interesxTiempo * monto;
+        const domicilioTotal = domicilioxTiempo * monto;
+        const totalAPagar = monto + interesTotal + domicilioTotal;
+        const cuotaFinal = totalAPagar / cuotas;
+
+        // Actualizar la vista
+        $('#calcInteres').val(interesTotal.toFixed(2));
+        $('#calcDomicilio').val(domicilioTotal.toFixed(2));
+        $('#calcTotal').val(totalAPagar.toFixed(2));
+        $('#calcCuota').val(cuotaFinal.toFixed(2));
+
     } else {
-        $('#calcInteres').text('$0.00');
-        $('#calcDomicilio').text('$0.00');
-        $('#calcTotal').text('$0.00');
-        $('#calcCuota').text('$0.00');
+        $('#calcInteres').val('$0.00');
+        $('#calcDomicilio').val('$0.00');
+        $('#calcTotal').val('$0.00');
+        $('#calcCuota').val('0.00');
     }
 }
+
 
 
 
 // Recalcular en tiempo real
 $(document).on('input', '#editMonto, #editTasa, #editTasaDomicilio, #editNumCuotas', calcularValoresEdicion);
 
-// ==================== VALIDAR FORMULARIO ====================
-function validarFormularioEdicion() {
-    const monto = parseFloat($('#editMonto').val());
-    const tasa = parseFloat($('#editTasa').val());
-    const tasaDomicilio = parseFloat($('#editTasaDomicilio').val());
-    const cuotas = parseInt($('#editNumCuotas').val());
-    const motivo = $('#editMotivo').val().trim();
-
-    if (!monto || monto < 100 || monto > 50000) {
-        Swal.fire('Error', 'El monto debe estar entre $100 y $50,000', 'error');
-        return false;
-    }
-    if (!tasa || tasa < 0.5 || tasa > 50) {
-        Swal.fire('Error', 'La tasa de interés debe estar entre 0.5% y 50%', 'error');
-        return false;
-    }
-    if (tasaDomicilio < 0 || tasaDomicilio > 20) {
-        Swal.fire('Error', 'La tasa de domicilio debe estar entre 0% y 20%', 'error');
-        return false;
-    }
-    if (!cuotas || cuotas < 1 || cuotas > 60) {
-        Swal.fire('Error', 'El número de cuotas debe estar entre 1 y 60', 'error');
-        return false;
-    }
-    if (!motivo || motivo.length < 10) {
-        Swal.fire('Error', 'El motivo debe tener al menos 10 caracteres', 'error');
-        return false;
-    }
-    return true;
-}
 
 // ==================== GUARDAR CAMBIOS ====================
 $(document).on('click', '#btnGuardarCambios', function () {
-    if (!validarFormularioEdicion()) return;
 
     const datosEdit = {
         idSolicitud: $('#editIdSolicitud').val(),
@@ -329,7 +361,8 @@ $(document).on('click', '#btnGuardarCambios', function () {
         numCuotas: parseInt($('#editNumCuotas').val()),
         tasa: parseFloat($('#editTasa').val()),
         tasaDomicilio: parseFloat($('#editTasaDomicilio').val()),
-        motivo: $('#editMotivo').val().trim()
+        motivo: $('#editMotivo').val().trim(),
+        montoCuota: parseFloat($('#calcCuota').val())
     };
 
     // Confirmar cambios
@@ -343,6 +376,7 @@ $(document).on('click', '#btnGuardarCambios', function () {
                     <li>Cuotas: ${datosEdit.numCuotas}</li>
                     <li>Tasa Interés: ${datosEdit.tasa}%</li>
                     <li>Tasa Domicilio: ${datosEdit.tasaDomicilio}%</li>
+                    <li>Monto Cuota: ${datosEdit.montoCuota}%</li>
                 </ul>
                 <p><strong>Motivo:</strong> ${datosEdit.motivo}</p>
             </div>
@@ -470,15 +504,12 @@ $(document).ready(function () {
                     icon: 'question',
                     showDenyButton: true,
                     showCancelButton: true,
-                    confirmButtonText: 'Modificar Solicitud',
-                    denyButtonText: 'Rechazar Directamente',
+                    confirmButtonText: 'Confirmar Rechazo',
                     cancelButtonText: 'Volver'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        if (solicitudActual) abrirModalEdicion(solicitudActual);
-                    } else if (result.isDenied) {
-                        mostrarAlertaRechazo(numeroSolicitud, nombreCliente); // Tu función existente
-                    } else {
+                        mostrarAlertaRechazo(numeroSolicitud, nombreCliente);
+                    }else {
                         $('#modalDetalleSolicitud').modal('show');
                     }
                 });
@@ -1584,7 +1615,7 @@ $(document).ready(function () {
                     {
                         text: [
                             'F.',
-                            { text: '                    ', decoration: 'underline' }
+                            { text: '                                 ', decoration: 'underline' }
                         ],
                         alignment: 'center',
                         fontSize: 12
