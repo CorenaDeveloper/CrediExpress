@@ -95,7 +95,7 @@
         </div>
         <div class="card-body">
             <div class="row align-items-end">
-                <div class="col-md-6">
+                <div class="col-md-6 mb-4">
                     <label for="dui" class="form-label fw-bold">
                         <i class="fas fa-id-card me-1"></i>DUI del Cliente
                     </label>
@@ -106,12 +106,21 @@
                            oninput="this.setCustomValidity('')">
                     <div class="form-text">Formato: 12345678-9</div>
                 </div>
-                <div class="col-md-3">
-                    <button type="button" onclick="getCliente();" class="btn btn-primary btn-lg w-100">
+                <div class="col-md-6 mb-4">
+                    <label for="dui" class="form-label fw-bold">
+                        <i class="fas fa-id-card me-1"></i>Buscar por Nombre
+                    </label>
+                    <input type="text" class="form-control form-control-lg" id="nombreApellido" name="nombres"
+                           placeholder="Nombre/Apellido" maxlength="50" required
+                           oninput="this.setCustomValidity('')">
+                    <div class="form-text">Busca por Nombre</div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <button type="button" onclick="busquedaCliente();" class="btn btn-primary btn-lg w-100">
                         <i class="fas fa-search me-2"></i>Buscar Cliente
                     </button>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-3 mb-4">
                     <button type="button" class="btn btn-outline-success btn-lg w-100" onclick="limpiarFormulario()">
                         <i class="fas fa-refresh me-2"></i>Limpiar
                     </button>
@@ -120,8 +129,27 @@
         </div>
     </div>
 
+    <!-- PASO 2: Selección de Cliente (cuando hay múltiples resultados) -->
+    <div class="row" style="display: none;" id="rowSeleccionCliente">
+        <div class="col-12">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Paso 2: Seleccionar Cliente
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Se encontraron varios clientes. Haga clic en el cliente correcto:</p>
+                    <div id="clientesEncontrados">
+                        <!-- Aquí se llenarán los clientes encontrados -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- PASO 2: Información del Cliente (Oculto inicialmente) -->
-    <div class="row" style="display: none;" id="rowDetalleCliente">
+   <div class="row" style="display: none;" id="rowDetalleCliente">
         <div class="col-md-8">
             <!-- Información Principal del Cliente -->
             <div class="cliente-info-card" id="clienteInfoCard">
@@ -187,26 +215,6 @@
         </div>
     </div>
 
-    <!-- Historial de Préstamos del Cliente -->
-    <div class="row" style="display: none;" id="rowHistorialPrestamos">
-        <div class="col-12">
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">
-                        <i class="fas fa-history me-2"></i>Historial de Préstamos y Solicitudes
-                    </h6>
-                    <button class="btn btn-outline-primary btn-sm" onclick="toggleHistorial()">
-                        <i class="fas fa-eye me-1"></i>Ver/Ocultar
-                    </button>
-                </div>
-                <div class="card-body" id="historialContent" style="display: none;">
-                    <div id="listaPrestamosHistorial">
-                        <!-- Se llenará dinámicamente -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- PASO 3: Configuración del Nuevo Préstamo -->
     <div class="row" style="display: none;" id="rowDetallePrestamo">
@@ -252,7 +260,7 @@
                                     <i class="fas fa-clock me-1"></i>Tipo de Préstamo
                                 </label>
                                 <select id="tipoPrestamo" name="TipoPrestamo" class="form-select form-select-lg">
-                                    <option value="DIARIO">📅 Diario</option>
+                                    <option value="DIARIO" selected="selected">📅 Diario</option>
                                     <option value="SEMANAL">📅 Semanal</option>
                                     <option value="QUINCENAL">📅 Quincenal</option>
                                     <option value="MENSUAL" selected>📅 Mensual</option>
@@ -306,25 +314,25 @@
                         <div class="calculadora-prestamo" id="calculadoraVisual" style="display: none;">
                             <h6><i class="fas fa-calculator me-2"></i>Resumen del Préstamo</h6>
                             <div class="row">
-                                <div class="col-md-3">
+                                <div class="col-md-3 mb-3">
                                     <div class="text-center p-3 bg-primary text-white rounded">
                                         <div class="h5 mb-1" id="resumenMonto">$0.00</div>
                                         <small>Monto Principal</small>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 mb-3">
                                     <div class="text-center p-3 bg-info text-white rounded">
                                         <div class="h5 mb-1" id="resumenInteres">$0.00</div>
                                         <small>Interés Total</small>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 mb-3">
                                     <div class="text-center p-3 bg-warning text-white rounded">
                                         <div class="h5 mb-1" id="resumenDomicilio">$0.00</div>
                                         <small>Tasa Domicilio</small>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-3 mb-3">
                                     <div class="text-center p-3 bg-success text-white rounded">
                                         <div class="h5 mb-1" id="resumenTotal">$0.00</div>
                                         <small>Total a Pagar</small>
@@ -336,19 +344,26 @@
                         <!-- Botones de Acción -->
                         <div class="row mt-4">
                             <div class="col-12 d-flex justify-content-end gap-2">
-                                <button type="button" class="btn btn-outline-secondary btn-lg" onclick="limpiarFormulario()">
-                                    <i class="fas fa-times me-2"></i>Cancelar
-                                </button>
-                                <button type="button" class="btn btn-info btn-lg" onclick="previsualizarPrestamo()">
-                                    <i class="fas fa-eye me-2"></i>Previsualizar
-                                </button>
-                                @if (User.TienePermiso("Home/NuevoPrestamo", "Create"))
-                                {
-                                    <button type="submit" class="btn btn-success btn-lg" id="btnSubmit">
-                                        <i class="fas fa-paper-plane me-2"></i>Crear Solicitud
-                                    </button>
-                                }
-
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="limpiarFormulario()">
+                                            <i class="fas fa-times me-2"></i>Cancelar
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <button type="button" class="btn btn-info" onclick="previsualizarPrestamo()">
+                                            <i class="fas fa-eye me-2"></i>Previsualizar
+                                        </button>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        @if (User.TienePermiso("Home/NuevoPrestamo", "Create"))
+                                        {
+                                            <button type="submit" class="btn btn-success" id="btnSubmit">
+                                                <i class="fas fa-paper-plane me-2"></i>Crear Solicitud
+                                            </button>
+                                        }
+                                    </div>
+                                </div>                    
                             </div>
                         </div>
                     </form>

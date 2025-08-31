@@ -2,43 +2,121 @@
 let clienteActual = null;
 let prestamosHistorial = [];
 
-// 🔍 FUNCIÓN MEJORADA PARA OBTENER CLIENTE
-function getCliente() {
+//============================================
+// Busqueda de cliente
+//============================================
+function busquedaCliente() {
     var dui = $('#dui').val().trim();
+    var nombreApellido = $('#nombreApellido').val().trim();
 
-    if (!dui) {
-        Swal.fire("Advertencia", "Por favor ingrese un DUI válido", "warning");
+    if (!dui && !nombreApellido) {
+        Swal.fire("Error", "Ingrese un DUI o Nombre/Apellido para buscar", "error");
         return;
     }
 
+    if (dui) {
+        getCliente(dui);
+    }
+    else {
+        getClienteNombre(nombreApellido);
+    }
+}
+function getCliente(dui) {
     showLoadingSpinner();
     limpiarDatosCliente();
-
     $.ajax({
         url: `/Auxiliares/GetClienteDetalle?dui=${dui}`,
         method: 'GET',
         success: function (resp) {
-
             if (!resp || typeof resp !== "object" || Object.keys(resp).length === 0) {
                 Swal.fire("Error", "No se encuentra cliente registrado con ese DUI.", "error");
                 hideLoadingSpinner();
                 return;
             }
-
             clienteActual = resp;
             mostrarDatosCliente(resp);
             cargarHistorialPrestamos(resp.id);
-
         },
         error: function (xhr, status, error) {
-            console.error('Error al cargar cliente:', error);
             hideLoadingSpinner();
-            Swal.fire("Error", "Error al consultar los datos del cliente", "error");
+            Swal.fire("Error", "Error al consultar los datos del cliente", error);
         }
     });
 }
 
+function getClienteNombre(nombreApellido) {
+    showLoadingSpinner();
+    limpiarDatosCliente();
+    $.ajax({
+        url: `/Auxiliares/GetClienteDetalleNombre?nombreApellido=${nombreApellido}`,
+        method: 'GET',
+        success: function (resp) {
+            
+            if (!resp || typeof resp !== "object" || Object.keys(resp).length === 0) {
+                Swal.fire("Error", "No se encuentra nigun cliente.", "error");
+                hideLoadingSpinner();
+                return;
+            }
+            clienteActual = resp;
+            mostrarCardSeleccionClientes(resp);
+        },
+        error: function (xhr, status, error) {
+            hideLoadingSpinner();
+            Swal.fire("Error", "Error al consultar los datos del cliente", error);
+        }
+    });
+}
+//============================================
+//============================================
+
+
+
+
 // 📊 MOSTRAR DATOS DEL CLIENTE
+function mostrarCardSeleccionClientes(clientes) {
+    let clientesHTML = '';
+
+    clientes.forEach(cliente => {
+        const nombreCompleto = `${cliente.nombre || ''} ${cliente.apellido || ''}`.trim();
+
+        clientesHTML += `
+            <div class="col-md-6 mb-3">
+                <div class="card h-100" style="cursor: pointer;" onclick="seleccionarClienteDetalle(${cliente.id})">
+                    <div class="card-body">
+                        <h6 class="card-title">${nombreCompleto}</h6>
+                        <p class="card-text mb-1"><strong>DUI:</strong> ${cliente.dui || 'Sin DUI'}</p>
+                        <p class="card-text mb-0"><small class="text-muted">${cliente.telefono || cliente.celular || 'Sin teléfono'}</small></p>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    $('#clientesEncontrados').html(`
+        <div class="row">
+            ${clientesHTML}
+        </div>
+    `);
+
+    hideLoadingSpinner();
+    // Guardar clientes para selección posterior
+    window.clientesTemp = clientes;
+
+    // Mostrar la card de selección
+    $('#rowSeleccionCliente').show();
+}
+
+function seleccionarClienteDetalle(clienteId) {
+    const cliente = window.clientesTemp.find(c => c.id === clienteId);
+
+    if (cliente) {
+        clienteActual = cliente;
+        $('#rowSeleccionCliente').hide();
+        mostrarDatosCliente(cliente);
+        cargarHistorialPrestamos(cliente.id);
+    }
+}
+
 function mostrarDatosCliente(cliente) {
     // Información básica
     $("#clienteNombre").html(`${cliente.nombre || ''} ${cliente.apellido || ''}`.trim());
@@ -71,9 +149,8 @@ function mostrarDatosCliente(cliente) {
         }
     }
 
-    // Mostrar secciones
     $('#rowDetalleCliente').show();
-    hideLoadingSpinner();
+    
 }
 
 // 📈 CARGAR HISTORIAL DE PRÉSTAMOS
@@ -92,13 +169,15 @@ function cargarHistorialPrestamos(idCliente) {
             prestamosHistorial = prestamos;
             prestamosActivos = prestamos.filter(p => p.aprobado == 1);
             actualizarResumenCliente(prestamosActivos);
-            mostrarHistorialPrestamos(prestamos);
+            //mostrarHistorialPrestamos(prestamos);
             validarNuevoPrestamo(prestamos);
             $('#rowDetallePrestamo').show();
+            hideLoadingSpinner();
         },
         error: function (xhr, status, error) {
             console.error('Error al cargar historial:', error);
             $('#rowDetallePrestamo').show();
+            hideLoadingSpinner();
         }
     });
 }
@@ -136,64 +215,60 @@ function actualizarResumenCliente(prestamos) {
     $('#historialEstado').text(estadoCredito).className = `badge ${badgeClass}`;
 }
 
-// 📋 MOSTRAR HISTORIAL DE PRÉSTAMOS
-function mostrarHistorialPrestamos(prestamos) {
-    const container = $('#listaPrestamosHistorial');
-    container.empty();
+//// MOSTRAR HISTORIAL DE PRÉSTAMOS
+////function mostrarHistorialPrestamos(prestamos) {
+////    const container = $('#listaPrestamosHistorial');
+////    container.empty();
+////    if (prestamos.length === 0) {
+////        container.html(`
+////            <div class="alert alert-info text-center">
+////                <i class="fas fa-info-circle me-2"></i>
+////                Este cliente no tiene historial de préstamos previos
+////            </div>
+////        `);
+////        //$('#rowHistorialPrestamos').show();
+////        return;
+////    }
+////    prestamos.forEach(prestamo => {
+////        const estado = prestamo.detalleAprobado;
+////        const estadoClass = prestamo.estado === 'A' ? 'prestamo-activo' : '';
+////        const card = `
+////            <div class="card prestamo-card ${estadoClass} mb-2">
+////                <div class="card-body p-3">
+////                    <div class="row align-items-center">
+////                        <div class="col-md-2">
+////                            <strong class="text-primary">Préstamo #${prestamo.id}</strong>
+////                            <br><small class="text-muted">${prestamo.fecha}</small>
+////                        </div>
+////                        <div class="col-md-2">
+////                            <span class="badge ${prestamo.estado === 'A' ? 'bg-success' : 'bg-secondary'}">${estado}</span>
+////                        </div>
+////                        <div class="col-md-2">
+////                            <strong>$${prestamo.monto.toFixed(2)}</strong>
+////                            <br><small class="text-muted">Monto</small>
+////                        </div>
+////                        <div class="col-md-2">
+////                            <strong>$${prestamo.cuotas.toFixed(2)}</strong>
+////                            <br><small class="text-muted">Cuota</small>
+////                        </div>
+////                        <div class="col-md-2">
+////                            <strong>${prestamo.numCuotas}</strong>
+////                            <br><small class="text-muted">Cuotas</small>
+////                        </div>
+////                        <div class="col-md-2">
+////                            <strong>${prestamo.tasa}%</strong>
+////                            <br><small class="text-muted">Tasa</small>
+////                        </div>
+////                    </div>
+////                </div>
+////            </div>
+////        `;
+////        container.append(card);
+////    });
+////    $('#rowHistorialPrestamos').show();
+////}
 
-    if (prestamos.length === 0) {
-        container.html(`
-            <div class="alert alert-info text-center">
-                <i class="fas fa-info-circle me-2"></i>
-                Este cliente no tiene historial de préstamos previos
-            </div>
-        `);
-        $('#rowHistorialPrestamos').show();
-        return;
-    }
-
-    prestamos.forEach(prestamo => {
-        const estado = prestamo.detalleAprobado;
-        const estadoClass = prestamo.estado === 'A' ? 'prestamo-activo' : '';
-
-        const card = `
-            <div class="card prestamo-card ${estadoClass} mb-2">
-                <div class="card-body p-3">
-                    <div class="row align-items-center">
-                        <div class="col-md-2">
-                            <strong class="text-primary">Préstamo #${prestamo.id}</strong>
-                            <br><small class="text-muted">${prestamo.fecha}</small>
-                        </div>
-                        <div class="col-md-2">
-                            <span class="badge ${prestamo.estado === 'A' ? 'bg-success' : 'bg-secondary'}">${estado}</span>
-                        </div>
-                        <div class="col-md-2">
-                            <strong>$${prestamo.monto.toFixed(2)}</strong>
-                            <br><small class="text-muted">Monto</small>
-                        </div>
-                        <div class="col-md-2">
-                            <strong>$${prestamo.cuotas.toFixed(2)}</strong>
-                            <br><small class="text-muted">Cuota</small>
-                        </div>
-                        <div class="col-md-2">
-                            <strong>${prestamo.numCuotas}</strong>
-                            <br><small class="text-muted">Cuotas</small>
-                        </div>
-                        <div class="col-md-2">
-                            <strong>${prestamo.tasa}%</strong>
-                            <br><small class="text-muted">Tasa</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        container.append(card);
-    });
-
-    $('#rowHistorialPrestamos').show();
-}
-
-// ⚠️ VALIDAR NUEVO PRÉSTAMO
+// VALIDAR NUEVO PRÉSTAMO
 function validarNuevoPrestamo(prestamos) {
     const prestamosActivos = prestamos.filter(p => p.estado === 'A');
     const container = $('#advertenciasCliente');
@@ -220,43 +295,6 @@ function validarNuevoPrestamo(prestamos) {
     }
 }
 
-// 🧮 FUNCIÓN MEJORADA PARA CALCULAR CUOTA
-//function calcularCuota() {
-//    const monto = parseFloat($('#txtMonto').val()) || 0;
-//    const tasaInteres = parseFloat($('#txtPorcentaje').val()) || 0;
-//    const tasaDomicilio = parseFloat($('#txtPorcentajeDomicilio').val()) || 0;
-//    const cuotas = parseInt($('#txtCuotas').val()) || 0;
-
-//    if (monto > 0 && cuotas > 0) {
-//        const interesTotal = monto * (tasaInteres / 100);
-//        const domicilioTotal = monto * (tasaDomicilio / 100);
-//        const totalAPagar = monto + interesTotal + domicilioTotal;
-//        const cuotaFinal = totalAPagar / cuotas;
-//        const intereFinal = interesTotal / cuotas;
-//        const domicilioFinal = domicilioTotal / cuotas;
-
-//        // Actualizar campos ocultos
-//        $('#txtCuotasMonto').val(cuotaFinal.toFixed(2));
-//        $('#txtInteres').val(intereFinal.toFixed(2));
-//        $('#txtDomicilio').val(domicilioFinal.toFixed(2));
-
-//        // Actualizar calculadora visual
-//        $('#resumenMonto').text('$' + monto.toFixed(2));
-//        $('#resumenInteres').text('$' + interesTotal.toFixed(2));
-//        $('#resumenDomicilio').text('$' + domicilioTotal.toFixed(2));
-//        $('#resumenTotal').text('$' + totalAPagar.toFixed(2));
-
-//        $('#calculadoraVisual').show();
-
-//        // Validaciones de riesgo
-//        validarMontoPrestamo(monto, totalAPagar);
-
-//    } else {
-//        $('#txtCuotasMonto').val('');
-//        $('#calculadoraVisual').hide();
-//        limpiarValidaciones();
-//    }
-//}
 
 // 🧮 FUNCIÓN MEJORADA PARA CALCULAR CUOTA CON INTERÉS SIMPLE
 function calcularCuota() {
@@ -407,25 +445,25 @@ function generarPreview(datos) {
             <div class="col-12">
                 <h6><i class="fas fa-chart-pie me-2"></i>Resumen Financiero</h6>
                 <div class="row text-center">
-                    <div class="col-3">
+                    <div class="col-md-3 mb-3">
                         <div class="p-3 bg-primary text-white rounded">
                            <h5>$${datos.prestamo.monto.toFixed(2)}</h5>
                             <small>Capital</small>
                         </div>
                     </div>
-                    <div class="col-3">
+                    <div class="col-md-3 mb-3">
                         <div class="p-3 bg-info text-white rounded">
                             <h5>${datos.calculos.interesTotal.toFixed(2)}</h5>
                             <small>Interés Total</small>
                         </div>
                     </div>
-                    <div class="col-3">
+                    <div class="col-md-3 mb-3">
                         <div class="p-3 bg-warning text-white rounded">
                             <h5>${datos.calculos.domicilioTotal.toFixed(2)}</h5>
                             <small>Domicilio Total</small>
                         </div>
                     </div>
-                    <div class="col-3">
+                    <div class="col-md-3 mb-3">
                         <div class="p-3 bg-success text-white rounded">
                             <h5>${datos.calculos.totalAPagar.toFixed(2)}</h5>
                             <small>Total a Pagar</small>
@@ -567,11 +605,11 @@ function limpiarFormulario() {
 
     // Ocultar secciones
     $('#rowDetalleCliente').hide();
-    $('#rowHistorialPrestamos').hide();
+    //$('#rowHistorialPrestamos').hide();
     $('#rowDetallePrestamo').hide();
     $('#calculadoraVisual').hide();
     $('#advertenciasCliente').hide();
-
+    $('#rowSeleccionCliente').hide();
     $('#advertenciasCliente').hide().empty();
     // Focus en DUI
     $('#dui').focus();

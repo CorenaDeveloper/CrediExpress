@@ -4,13 +4,14 @@ let cronogramaData = {};
 $(document).ready(function () {
     // Inicializar fecha actual
     $('#fechaActual').text(new Date().toLocaleDateString('es-ES'));
-
+    showLoadingSpinner();
     // Inicializar DataTable
     tabla = $('#tablaMovimientos').DataTable({
         pageLength: 15,
         order: [[0, 'desc']],
         columnDefs: [
-            { targets: [4, 5], className: 'text-center' }
+            { targets: [2, 3], className: 'text-center' }, // Ingresos y Egresos
+            { targets: [5], orderable: false } // Columna de acciones
         ]
     });
 
@@ -33,8 +34,8 @@ $(document).ready(function () {
     $('#btnConfirmarDesembolso').on('click', confirmarDesembolso);
     $('#btnGuardarCobro').on('click', guardarCobro);
     $('#btnActualizar').on('click', cargarMovimientosDia);
-    $('#btnFiltrar').on('click', filtrarMovimientos);
     $('#btnExportar').on('click', exportarMovimientos);
+
 
     // Enter en campo de búsqueda
     $('#numeroSolicitud').on('keypress', function (e) {
@@ -46,7 +47,7 @@ $(document).ready(function () {
     // Enter en campo DUI
     $('#dui').on('keypress', function (e) {
         if (e.which === 13) {
-            getCliente();
+            getClienteBuscar();
         }
     });
 
@@ -197,13 +198,7 @@ $(document).ready(function () {
         $('#btnConfirmarDesembolso').hide();
     }
 
-    function filtrarMovimientos() {
-        const tipo = $('#filtroTipo').val();
-        const concepto = $('#filtroConcepto').val();
 
-        tabla.columns(1).search(tipo).draw();
-        tabla.columns(2).search(concepto).draw();
-    }
 
     function exportarMovimientos() {
         const fecha = new Date().toISOString().split('T')[0];
@@ -292,7 +287,7 @@ function guardarCobro() {
         data: data,
         success: function (response) {
             $btnGuardar.prop('disabled', false).html('<i class="fas fa-save me-2"></i>Registrar Cobro');
-            console.log(response.data);
+
             if (response.success) {
                 const datosCobro = {
                     idCobro: response.data?.idCobro || new Date().getTime(),
@@ -370,6 +365,7 @@ function mostrarError(mensaje) {
     // Para el modal de cobro
     $('#seccionCliente').hide();
     $('#seccionFormularioCobro').hide();
+    $('#registroCobro').hide();
     $('#btnGuardarCobro').hide();
     $('#btnNuevaBusqueda').hide();
 }
@@ -377,6 +373,7 @@ function mostrarError(mensaje) {
 function limpiarDatosCliente() {
     $('#seccionCliente').hide();
     $('#seccionFormularioCobro').hide();
+    $('#registroCobro').hide();
     $('#btnGuardarCobro').hide();
     $('#btnNuevaBusqueda').hide();
     $('#dui').val('');
@@ -429,26 +426,26 @@ function mostrarListaPrestamos(prestamos) {
                  onclick="seleccionarPrestamo(${index})" style="cursor: pointer;">
                 <div class="card-body p-3">
                     <div class="row align-items-center">
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-6">
                             <strong class="text-primary">Préstamo #${prestamo.id}</strong>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-6">
                             <small class="text-muted">Monto Original</small><br>
                             <strong>$${prestamo.monto.toFixed(2)}</strong>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-6">
                             <small class="text-muted">Cuota</small><br>
                             <strong class="text-success">$${prestamo.cuotas.toFixed(2)}</strong>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-6">
                             <small class="text-muted">Progreso</small><br>
                            <strong>${prestamo.numCuotas}/${prestamo.cuotasPagadas}</strong>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-6">
                             <small class="text-muted">Saldo</small><br>
                              <strong class="text-warning">$${prestamo.saldoPendiente.toFixed(2)}</strong>
                         </div>
-                        <div class="col-md-2 text-center">
+                        <div class="col-lg-2 col-6 text-center">
                             ${estadoMora}
                         </div>
                     </div>
@@ -516,6 +513,7 @@ function nuevaBusqueda() {
     $('#seccionBusqueda').show();
     $('#seccionCliente').hide();
     $('#seccionFormularioCobro').hide();
+    $('#registroCobro').hide();
     $('#seccionCronograma').hide(); 
     $('#mensajeError').hide();
     $('#btnGuardarCobro').hide();
@@ -529,8 +527,6 @@ function nuevaBusqueda() {
 
 function ajustarCamposCobro() {
     const concepto = $('#conceptoCobro').val();
-    console.log('cronogramaData');
-    console.log(cronogramaData);
     // Resetear campos
     //$('#montoCapital, #montoInteres, #montoMora').val('').prop('disabled', false);
     // Configurar campos según el concepto
@@ -574,14 +570,28 @@ function calcularTotal() {
 }
 
 // Función mejorada para buscar cliente
-function getCliente() {
+function getClienteBuscar() {
     var dui = $('#dui').val().trim();
+    var nombreApellido = $('#nombreApellido').val().trim();
 
-    if (!dui) {
-        mostrarError('Por favor ingrese un DUI');
-        return;
+    // Limpiar primero
+    $('#rowSeleccionCliente').hide();
+    $('#seccionCliente').hide();
+
+    if (dui) {
+        // Búsqueda directa por DUI
+        getCliente(dui);
+    } else if (nombreApellido) {
+        // Búsqueda por nombre (muestra listado)
+        getClienteNombre(nombreApellido);
+    } else {
+        mostrarError('Por favor ingrese un DUI o un nombre para buscar');
     }
+}
 
+
+function getCliente(dui){
+    showLoadingSpinner();
     $.ajax({
         url: `/Auxiliares/GetClienteDetalle?dui=${dui}`,
         method: 'GET',
@@ -592,20 +602,93 @@ function getCliente() {
                 limpiarDatosCliente();
                 return;
             }
-
-            // Mostrar datos del cliente
             mostrarDatosCliente(resp);
-
-            // Buscar préstamos del cliente
-            //prestamosXcliente(resp.id);
             buscarPrestamosConCalendario(resp.id);
-
         },
         error: function (xhr, status, error) {
             console.error('Error al buscar cliente:', error);
+            hideLoadingSpinner();
             mostrarError('Error al buscar el cliente. Intente nuevamente.');
         }
     });
+}
+
+function getClienteNombre(nombreApellido) {
+    showLoadingSpinner();
+    limpiarDatosCliente();
+    $.ajax({
+        url: `/Auxiliares/GetClienteDetalleNombre?nombreApellido=${nombreApellido}`,
+        method: 'GET',
+        success: function (resp) {
+
+            if (!resp || typeof resp !== "object" || Object.keys(resp).length === 0) {
+                Swal.fire("Error", "No se encuentra nigun cliente.", "error");
+                hideLoadingSpinner();
+                return;
+            }
+            clienteActual = resp;
+            mostrarCardSeleccionClientes(resp);
+        },
+        error: function (xhr, status, error) {
+            hideLoadingSpinner();
+            Swal.fire("Error", "Error al consultar los datos del cliente", error);
+        }
+    });
+}
+
+
+// Función optimizada para móvil - reemplazar la función existente
+function mostrarCardSeleccionClientes(clientes) {
+    let clientesHTML = '';
+
+    clientes.forEach(cliente => {
+        const nombreCompleto = `${cliente.nombre || ''} ${cliente.apellido || ''}`.trim();
+
+        // Card compacta para móvil
+        clientesHTML += `
+            <div class="card mb-2 border-0 shadow-sm" style="cursor: pointer;" onclick="seleccionarClienteDetalle(${cliente.id})">
+                <div class="card-body p-3">
+                    <div class="row align-items-center">
+                        <div class="col-8">
+                            <h6 class="card-title mb-1 text-primary">${nombreCompleto}</h6>
+                            <small class="text-muted">
+                                <i class="fas fa-id-card me-1"></i>${cliente.dui || 'Sin DUI'}
+                            </small>
+                        </div>
+                        <div class="col-4 text-end">
+                            <i class="fas fa-chevron-right text-muted"></i>
+                            <br><small class="text-info">${cliente.telefono || cliente.celular || 'S/T'}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    $('#clientesEncontrados').html(clientesHTML);
+    hideLoadingSpinner();
+
+    // Guardar clientes para selección posterior
+    window.clientesTemp = clientes;
+
+    // Mostrar la sección de selección
+    $('#rowSeleccionCliente').show();
+}
+
+// Función para seleccionar cliente del listado
+function seleccionarClienteDetalle(idCliente) {
+    const cliente = window.clientesTemp.find(c => c.id === idCliente);
+
+    if (!cliente) {
+        Swal.fire('Error', 'Cliente no encontrado', 'error');
+        return;
+    }
+
+    // Ocultar la lista de selección
+    $('#rowSeleccionCliente').hide();
+
+    mostrarDatosCliente(cliente);
+    buscarPrestamosConCalendario(cliente.id);
 }
 
 
@@ -613,7 +696,7 @@ function cargarMovimientosDia() {
     const fecha = obtenerFechaSalvador();
    
     $.ajax({
-        url: `/Auxiliares/GetMovimientosDiariosCompleto?fecha=${fecha}&creadoPor=${window.usuarioActual.id}`,
+        url: `/Auxiliares/GetMovimientosDiariosCompleto?fecha=${fecha}`,
         method: 'GET',
         success: function (response) {
             tabla.clear();
@@ -632,8 +715,6 @@ function cargarMovimientosDia() {
                     }
 
                     const fila = tabla.row.add([
-                        mov.hora,
-                        `<span class="badge ${esIngreso ? 'bg-success' : 'bg-danger'}">${mov.tipo}</span>`,
                         mov.concepto,
                         mov.cliente,
                         esIngreso ? `<span class="monto-ingreso">$${monto.toFixed(2)}</span>` : '-',
@@ -656,9 +737,11 @@ function cargarMovimientosDia() {
             $('#totalIngresos').text('$' + totalIngresos.toFixed(2));
             $('#totalEgresos').text('$' + totalEgresos.toFixed(2));
             $('#contadorMovimientos').text(response.data ? response.data.length : 0);
+            hideLoadingSpinner();
         },
         error: function () {
             Swal.fire('Error', 'Error al cargar los movimientos del día', 'error');
+            hideLoadingSpinner();
         }
     });
 }
@@ -1292,11 +1375,15 @@ function buscarPrestamosConCalendario(idCliente) {
                     return;
                 }
                 mostrarListaPrestamosConCalendario(data.data);
+                hideLoadingSpinner();
             } else {
+                hideLoadingSpinner();
                 mostrarError("No se encontraron préstamos activos para este cliente");
+
             }
         },
         error: function (xhr, status, error) {
+            hideLoadingSpinner();
             console.error('Error al buscar préstamos:', error);
             mostrarError('Error al buscar los préstamos. Intente nuevamente.');
         }
@@ -1308,8 +1395,7 @@ function mostrarListaPrestamosConCalendario(prestamos) {
     const contenedor = $('#listaPrestamos');
     contenedor.empty();
     $('#cantidadPrestamos').text(prestamos.length);
-    console.log("prestamos");
-    console.log(prestamos);
+
     prestamos.forEach(function (prestamo, index) {
         const estadoMora = prestamo.cuotasVencidas > 0
             ? `<span class="badge bg-danger">Mora: ${prestamo.cuotasVencidas} cuotas</span>`
@@ -1320,27 +1406,27 @@ function mostrarListaPrestamosConCalendario(prestamos) {
                  onclick="seleccionarPrestamoConCalendario(${index})" style="cursor: pointer;">
                 <div class="card-body p-3">
                     <div class="row align-items-center">
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-6">
                             <strong class="text-primary">Préstamo #${prestamo.id}</strong>
                             <br><small class="text-muted">${prestamo.tipoPrestamo}</small>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-6">
                             <small class="text-muted">Monto Original</small><br>
                             <strong>$${prestamo.monto.toFixed(2)}</strong>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-6">
                             <small class="text-muted">Cuota</small><br>
                             <strong class="text-success">$${prestamo.cuotas.toFixed(2)}</strong>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-6">
                             <small class="text-muted">Progreso</small><br>
                             <strong>${prestamo.cuotasPagadas}/${prestamo.numCuotas}</strong>
                         </div>
-                        <div class="col-md-2">
+                        <div class="col-lg-2 col-6">
                             <small class="text-muted">Saldo Capital</small><br>
-                            <strong class="text-warning">$${prestamo.capitalPendiente.toFixed(2)}</strong>
+                            <strong class="text-warning">$${prestamo.saldoPendiente.toFixed(2)}</strong>
                         </div>
-                        <div class="col-md-2 text-center">
+                        <div class="col-lg-2 col-6">
                             ${estadoMora}
                             <br><small class="text-info">Próxima: #${prestamo.proximaCuota}</small>
                         </div>
@@ -1397,13 +1483,13 @@ function cargarCronogramaReal(idPrestamo) {
 function mostrarCronogramaReal(cronograma) {
     const tbody = $('#tablaCronograma');
     tbody.empty();
-    console.log('mostrarCronogramaReal cronograma');
+
     console.log(cronograma);
+
     cronograma.forEach(function (cuota) {
         let estadoBadge = '';
         let claseRow = '';
         let seleccionable = '';
-
         if (cuota.pagado) {
             estadoBadge = '<span class="badge bg-success">Pagado</span>';
             claseRow = 'table-success';
@@ -1444,6 +1530,7 @@ function seleccionarCuotaParaPago(numeroCuota, fechaProgramada, montoCuota, capi
     // Pre-llenar el formulario con los datos de la cuota seleccionada
     $('#numeroCuota').val(numeroCuota);
     $('#conceptoCobro').val('CUOTA_COMPLETA');
+    //registroCobro
     cronogramaData =
     {
         numeroCuota: numeroCuota,
@@ -1476,7 +1563,7 @@ function seleccionarCuotaParaPago(numeroCuota, fechaProgramada, montoCuota, capi
     // Resaltar la cuota seleccionada
     $('#tablaCronograma tr').removeClass('table-info');
     $(`#tablaCronograma tr:contains("#${numeroCuota}")`).addClass('table-info');
-
+    $('#registroCobro').show();
     // Scroll hasta el formulario
     $('html, body').animate({
         scrollTop: $("#formCobro").offset().top - 100

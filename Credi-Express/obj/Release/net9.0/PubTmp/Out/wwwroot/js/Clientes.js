@@ -142,6 +142,7 @@ function cargarClientes() {
                            data-bs-toggle="modal"
                            data-bs-target="#verClienteModal"
                            data-nombre="${row.nombre}"
+                           data-id="${row.id}"
                            data-apellido="${row.apellido}"
                            data-gestor="${row.gestorNombre}"
                            data-dui="${row.dui}"
@@ -344,6 +345,7 @@ $(document).ready(function () {
         modal.find('#modalReferencia2').text(button.data('referencia2'));
         modal.find('#modalTelReferencia2').text(button.data('telreferencia2'));
         modal.find('#modalGestor').text(button.data('gestor'));
+        modal.find('#modelID').text(button.data('id'));
 
         const genero = button.data('genero');
         const imgSrc = genero === 'F'

@@ -17,7 +17,7 @@
         nombreCompleto: '@Html.Raw(nombreCompleto)'
     };
 </script>
-
+<link href="~/css/movimientos.css" rel="stylesheet" />
 <style>
     .dashboard-card {
         border-radius: 10px;
@@ -122,7 +122,7 @@
                                 <i class="fas fa-arrow-up fa-2x mb-2"></i>
                             </div>
                         </div>
-                        <div class="col col-stats ms-3 ms-sm-0">
+                        <div class="col col-stats ms-3">
                             <div class="numbers">
                                 <p class="card-category">Ingresos</p>
                                 <h4 class="card-title" id="ingresosDia">$0.00</h4>
@@ -141,7 +141,7 @@
                                 <i class="fas fa-arrow-down fa-2x mb-2"></i>
                             </div>
                         </div>
-                        <div class="col col-stats ms-3 ms-sm-0">
+                        <div class="col col-stats ms-3">
                             <div class="numbers">
                                 <p class="card-category">Egresos</p>
                                 <h4 class="card-title" id="egresosDia">$0.00</h4>
@@ -160,7 +160,7 @@
                                 <i class="fas fa-luggage-cart"></i>
                             </div>
                         </div>
-                        <div class="col col-stats ms-3 ms-sm-0">
+                        <div class="col col-stats ms-3">
                             <div class="numbers">
                                 <p class="card-category">Movimientos</p>
                                 <h4 class="card-title" id="totalMovimientos">0</h4>
@@ -174,7 +174,7 @@
     <!-- Fin Dashboard Cards -->
 
 
-    <div class="row mb-4">
+    <div class="row">
         <!-- Botones Principales -->
         @if (User.TienePermiso("Home/Movimientos", "Create-Egreso"))
         {
@@ -210,35 +210,13 @@
             </h5>
         </div>
         <div class="card-body">
-            <!-- Filtros -->
-            <div class="row mb-3">
-                <div class="col-md-3">
-                    <select class="form-select" id="filtroTipo">
-                        <option value="">Todos los movimientos</option>
-                        <option value="INGRESO">Solo Ingresos</option>
-                        <option value="EGRESO">Solo Egresos</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <input type="text" class="form-control" id="filtroConcepto"
-                           placeholder="Buscar por concepto o cliente...">
-                </div>
-                <div class="col-md-3">
-                    <button class="btn btn-outline-secondary w-100" id="btnFiltrar">
-                        <i class="fas fa-search me-1"></i>Filtrar
-                    </button>
-                </div>
-            </div>
-
             <!-- Tabla -->
-            <div class="table-responsive">
+            <div class="movimientos-scroll">
                 <table class="table table-hover" id="tablaMovimientos">
                     <thead class="table-dark">
                         <tr>
-                            <th>Hora</th>
-                            <th>Tipo</th>
                             <th>Concepto</th>
-                            <th>Cliente/Detalles</th>
+                            <th>Tipo</th>
                             <th class="text-center">Ingresos</th>
                             <th class="text-center">Egresos</th>
                             <th>Usuario</th>
@@ -250,7 +228,7 @@
                     </tbody>
                     <tfoot class="table-light">
                         <tr>
-                            <th colspan="4" class="text-end">TOTALES:</th>
+                            <th colspan="2" class="text-end">TOTALES:</th>
                             <th class="text-center monto-ingreso" id="totalIngresos">$0.00</th>
                             <th class="text-center monto-egreso" id="totalEgresos">$0.00</th>
                             <th colspan="2"></th>
@@ -386,18 +364,52 @@
                     </div>
 
                     <div class="row g-3">
-                        <div class="col-lg-8 col-12">
-                            <label for="dui" class="form-label fw-bold fs-5">
+
+                        <div class="col-lg-4 col-12">
+                            <label for="dui" class="form-label fw-bold">
                                 <i class="fas fa-id-card me-2"></i>DUI del Cliente
                             </label>
                             <input type="text" class="form-control form-control-lg dui" id="dui"
                                    placeholder="00000000-0" maxlength="10" required>
                             <div class="form-text">Formato: 12345678-9</div>
                         </div>
+
+                        <div class="col-lg-4 col-12">
+                            <label for="nombreApellido" class="form-label fw-bold">
+                                <i class="fas fa-id-card me-1"></i>Buscar por Nombre
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="nombreApellido" name="nombres"
+                                   placeholder="Nombre/Apellido" maxlength="50" required
+                                   oninput="this.setCustomValidity('')">
+                            <div class="form-text">Busca por Nombre</div>
+                        </div>
+
                         <div class="col-lg-4 col-12 d-flex align-items-end">
-                            <button type="button" class="btn btn-primary btn-lg w-100" onclick="getCliente()">
+                            <button type="button" class="btn btn-primary btn-lg w-100" onclick="getClienteBuscar()">
                                 <i class="fas fa-search me-2"></i>Buscar Cliente
                             </button>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div id="rowSeleccionCliente" style="display: none;">
+                    <div class="alert alert-info">
+                        <i class="fas fa-users me-2"></i>
+                        <strong>Clientes encontrados:</strong> Seleccione el cliente correcto
+                    </div>
+
+                    <!-- Lista de clientes simplificada para móvil -->
+                    <div class="card border-warning mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0">
+                                <i class="fas fa-user-friends me-2"></i>Resultados de Búsqueda
+                            </h6>
+                        </div>
+                        <div class="card-body p-2" style="max-height: 300px; overflow-y: auto;">
+                            <div id="clientesEncontrados">
+                                <!-- Se llenarán dinámicamente -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -410,7 +422,7 @@
                     </div>
 
                     <div class="row">
-                        <div class="col-md-4">
+                        <div class="col-md-12">
                             <!-- Información del Cliente -->
                             <div class="card border-success mb-4">
                                 <div class="card-body">
@@ -440,20 +452,16 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-8">
+                        <div class="col-md-12">
                             <!-- Lista de Préstamos -->
-                            <div class="card border-info mb-4">
-                                <div class="card-header bg-info text-white">
-                                    <h6 class="mb-0">
-                                        <i class="fas fa-hand-holding-usd me-2"></i>Préstamos Activos
-                                        <span class="badge bg-light text-dark ms-2" id="cantidadPrestamos">0</span>
-                                    </h6>
-                                </div>
-                                <div class="card-body" style="max-height: 50vh; overflow-y: auto;">
-                                    <div id="listaPrestamos">
+                             <div class="alert alert-success">
+                               <h6 class="mb-0">
+                                <i class="fas fa-hand-holding-usd me-2"></i>Préstamos Activos
+                                <span class="badge bg-light text-dark ms-2" id="cantidadPrestamos">0</span>
+                              </h6>
+                             </div>
+                            <div id="listaPrestamos">
                                         <!-- Se llenarán dinámicamente -->
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>                   
@@ -470,72 +478,54 @@
                         <div class="col-xl-12 col-lg-12 col-12">
                             <!-- Información del Préstamo Seleccionado -->
                             <div class="card border-primary mb-4">
-                                <div class="card-header bg-primary text-white">
-                                    <h6 class="mb-0">
-                                        <i class="fas fa-info-circle me-2"></i>Préstamo Seleccionado
-                                    </h6>
-                                </div>
                                 <div class="card-body">
                                     <div class="row g-3">
-                                        <div class="col-xl-4 col-lg-6 col-12">
+                                        <div class="col-lg-3 col-4 col-6">
                                             <div class="text-center p-3 bg-light rounded-3">
                                                 <small class="text-muted d-block mb-1">Préstamo #</small>
                                                 <strong id="prestamoIdSeleccionado" class="fs-4 text-primary">-</strong>
                                             </div>
                                         </div>
-                                        <div class="col-xl-4 col-lg-6 col-12">
+                                        <div class="col-lg-3 col-4 col-6">
                                             <div class="text-center p-3 bg-light rounded-3">
                                                 <small class="text-muted d-block mb-1">Cuota Mensual</small>
                                                 <strong class="text-success fs-4" id="prestamoCuotaMensual">-</strong>
                                             </div>
                                         </div>
-                                        <div class="col-xl-4 col-lg-6 col-12">
+                                        <div class="col-lg-3 col-4 col-6">
                                             <div class="text-center p-3 bg-light rounded-3">
                                                 <small class="text-muted d-block mb-1">Próxima Cuota</small>
                                                 <strong class="text-info fs-4" id="prestamoProximaCuota">-</strong>
                                             </div>
                                         </div>
-                                        <!-- ===== AGREGAR DESPUÉS DE "Próxima Cuota" EN EL MODAL ===== -->
-                                        @*    <div class="col-xl-3 col-lg-6 col-12">
-                                    <div class="text-center p-3 bg-light rounded-3">
-                                        <small class="text-muted d-block mb-1">Fecha Vencimiento</small>
-                                        <strong class="text-danger fs-6" id="prestamoFechaVencimiento">-</strong>
-                                    </div>
-                                </div>
- *@
-                                        <!-- ===== AGREGAR NUEVA SECCIÓN DESPUÉS DEL FORMULARIO DE COBRO ===== -->
-                                        <!-- Cronograma de Pagos -->
-                                        <div class="card border-warning mb-4" id="seccionCronograma" style="display: none;">
-                                            <div class="card-header bg-warning text-dark">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <h6 class="mb-0">
-                                                        <i class="fas fa-calendar-alt me-2"></i>Cronograma de Pagos
-                                                    </h6>
-                                                    <button type="button" class="btn btn-sm btn-outline-dark" onclick="toggleCronograma()">
-                                                        <i class="fas fa-eye me-1"></i>Ver/Ocultar
-                                                    </button>
-                                                    <small class="text-muted ms-2">Haga clic en "Pagar" para seleccionar una cuota específica</small>
-                                                </div>
+                                        <div class="col-lg-3 col-4 col-6">
+                                            <div class="text-center p-3 bg-light rounded-3">
+                                             <small class="text-muted d-block mb-1">Cronograma de Pagos</small>
+                                             <button type="button" class="btn btn-sm btn-primary" onclick="toggleCronograma()">
+                                                  <i class="fas fa-eye me-1"></i>Ver/Ocultar
+                                              </button>
                                             </div>
-                                            <div class="card-body" id="cronogramaBody" style="max-height: 300px; overflow-y: auto; display: none;">
-                                                <div class="table-responsive">
-                                                    <table class="table table-sm table-hover">
-                                                        <thead class="table-dark">
-                                                            <tr>
-                                                                <th class="text-start">Cuota #</th>
-                                                                <th class="text-start">Fecha Programada</th>
-                                                                <th class="text-start">Cuota</th>
-                                                                <th class="text-start">Pagado</th>
-                                                                <th class="text-start">Estado</th>
-                                                                <th class="text-start">Fecha Real Pago</th>
-                                                                <th class="text-start">Acción</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody id="tablaCronograma">
-                                                            <!-- Se llenará dinámicamente -->
-                                                        </tbody>
-                                                    </table>
-                                                </div>
+                                        </div>
+
+                                        <!-- Cronograma de Pagos -->
+                                        <div class="mb-4" id="seccionCronograma" style="display: none;">
+                                            <div id="cronogramaBody" style="max-height: 400px; overflow-y: auto;" class="cronograma-scroll">
+                                                <table class="table table-sm table-hover tabla-cronograma-mobile tabla-cronograma-desktop">
+                                                    <thead class="table-dark sticky-top">
+                                                        <tr>
+                                                            <th class="text-start">Cuota</th>
+                                                            <th class="text-start">Fecha</th>
+                                                            <th class="text-start">Cuota</th>
+                                                            <th class="text-start">Pagado</th>
+                                                            <th class="text-start">Estado</th>
+                                                            <th class="text-start">Fecha Movimiento</th>
+                                                            <th class="text-start">Acción</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="tablaCronograma">
+                                                        <!-- Se llenará dinámicamente -->
+                                                    </tbody>
+                                                </table>
                                             </div>
                                         </div>
                                     </div>
@@ -543,14 +533,18 @@
                                 </div>
                             </div>
                         </div>
+
+
                         <div class="col-xl-12 col-lg-12 col-12">
+                            <div class="alert alert-primary">
+                                <i class="fas fa-credit-card me-2"></i>
+                                <strong>Paso 4:</strong> Registro de Cobro
+                            </div>
+                        </div>
+
+                        <div class="col-xl-12 col-lg-12 col-12" id="registroCobro" style="display: none;">
                             <!-- Formulario de Cobro -->
-                            <div class="card border-primary mb-4">
-                                <div class="card-header bg-primary text-white">
-                                    <h6 class="mb-0">
-                                        <i class="fas fa-info-circle me-2"></i>Registro de Cobro
-                                    </h6>
-                                </div>
+                            <div class="card border-primary mb-4">                         
                                 <div class="card-body">
                                     <div class="row g-3">
 
@@ -564,8 +558,8 @@
                                                     <select class="form-select form-select-lg" id="conceptoCobro" required onchange="ajustarCamposCobro()">
                                                         <option value="">Seleccione el concepto</option>
                                                         <option value="CUOTA_COMPLETA">💰 Pago de Cuota Completa</option>
-                                                        <option value="SOLO_CAPITAL">📊 Solo Capital</option>
-                                                        <option value="SOLO_INTERES">📈 Solo Interés</option>
+                              @*                           <option value="SOLO_CAPITAL">📊 Solo Capital</option>
+                                                        <option value="SOLO_INTERES">📈 Solo Interés</option> *@
                                                         <option value="ABONO_PARCIAL">💵 Abono Parcial</option>
                                                        
                                                         @*  <option value="PAGO_ADELANTADO">⚡ Pago Adelantado</option>
@@ -657,6 +651,12 @@
                                                     <textarea class="form-control form-control-lg" id="observacionesCobro" rows="3"
                                                               placeholder="Detalles adicionales del cobro (opcional)"></textarea>
                                                 </div>
+                                                <div class="col-12">
+                                                    <button type="button" class="btn btn-success btn-lg flex-fill" id="btnGuardarCobro"
+                                                            style="display: none;" onclick="guardarCobro()">
+                                                        <i class="fas fa-save me-2"></i>Registrar Cobro
+                                                    </button>
+                                                </div>
                                             </div>
                                         </form>
                                     </div>
@@ -684,11 +684,6 @@
                     <button type="button" class="btn btn-outline-primary btn-lg" id="btnNuevaBusqueda"
                             style="display: none;" onclick="nuevaBusqueda()">
                         <i class="fas fa-search me-2"></i>Buscar Otro
-                    </button>
-
-                    <button type="button" class="btn btn-success btn-lg flex-fill" id="btnGuardarCobro"
-                            style="display: none;" onclick="guardarCobro()">
-                        <i class="fas fa-save me-2"></i>Registrar Cobro
                     </button>
                 </div>
             </div>

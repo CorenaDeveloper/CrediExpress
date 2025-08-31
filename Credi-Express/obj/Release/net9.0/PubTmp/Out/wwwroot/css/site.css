@@ -29,15 +29,18 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+
+/* TU CSS ACTUAL MEJORADO CON RESPONSIVE */
 #alertContainer {
     position: fixed;
     top: 20px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 9999;
-    width: 40%; /* Puedes ajustar este valor */
+    width: 40%; /* Desktop */
     max-width: 90%;
-    pointer-events: none; /* No bloquea el clic fuera */
+    pointer-events: none;
 }
 
     #alertContainer .alert {
@@ -49,7 +52,7 @@ body {
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         word-wrap: break-word;
         word-break: break-word;
-        pointer-events: auto; /* Reactiva los botones */
+        pointer-events: auto;
     }
 
     /* Ícono de la alerta */
@@ -77,6 +80,87 @@ body {
         flex-shrink: 0;
     }
 
+/* ===== MEDIA QUERIES PARA MÓVILES ===== */
+@media (max-width: 768px) {
+    #alertContainer {
+        width: 95% !important; /* Casi todo el ancho en móvil */
+        max-width: 95% !important;
+        top: 10px !important;
+    }
+
+        #alertContainer .alert {
+            font-size: 16px !important; /* Texto más grande */
+            padding: 15px 18px !important; /* Más padding */
+            border-radius: 10px !important;
+            min-height: 60px !important; /* Altura mínima */
+        }
+
+            #alertContainer .alert p {
+                font-size: 16px !important; /* Texto del mensaje más grande */
+                line-height: 1.4 !important;
+                font-weight: 500 !important; /* Un poco más bold */
+                padding: 0 12px !important; /* Más espacio horizontal */
+            }
+
+        #alertContainer .icon-item {
+            width: 45px !important; /* Icono más grande */
+            height: 45px !important;
+            min-width: 45px !important;
+            min-height: 45px !important;
+            margin-right: 8px !important;
+        }
+
+            #alertContainer .icon-item span {
+                font-size: 20px !important; /* Icono más grande */
+            }
+
+        #alertContainer .btn-close {
+            font-size: 18px !important; /* Botón cerrar más grande */
+            width: 32px !important;
+            height: 32px !important;
+            margin-left: 12px !important;
+        }
+}
+
+/* Para pantallas muy pequeñas */
+@media (max-width: 480px) {
+    #alertContainer {
+        width: 98% !important;
+        top: 5px !important;
+    }
+
+        #alertContainer .alert {
+            padding: 12px 15px !important;
+            min-height: 55px !important;
+        }
+
+            #alertContainer .alert p {
+                font-size: 15px !important;
+                padding: 0 8px !important;
+            }
+
+        #alertContainer .icon-item {
+            width: 42px !important;
+            height: 42px !important;
+        }
+}
+
+/* Mejoras adicionales para todos los tamaños */
+#alertContainer .alert {
+    animation: slideInDown 0.4s ease-out;
+}
+
+@keyframes slideInDown {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
 /* Estilos adicionales para el modal de solicitud de crédito */
 

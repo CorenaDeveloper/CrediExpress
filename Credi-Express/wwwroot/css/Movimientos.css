@@ -1,0 +1,155 @@
+﻿@media (max-width: 768px) {
+    .tabla-cronograma-mobile {
+        font-size: 11px !important;
+    }
+
+        .tabla-cronograma-mobile th,
+        .tabla-cronograma-mobile td {
+            padding: 4px 6px !important;
+            font-size: 11px !important;
+            line-height: 1.2 !important;
+            vertical-align: middle !important;
+        }
+
+        .tabla-cronograma-mobile th {
+            font-size: 10px !important;
+            font-weight: 600 !important;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tabla-cronograma-mobile .btn {
+            font-size: 9px !important;
+            padding: 2px 6px !important;
+            border-radius: 3px !important;
+        }
+
+        .tabla-cronograma-mobile .badge {
+            font-size: 9px !important;
+            padding: 2px 4px !important;
+        }
+
+    /* Scroll horizontal suave */
+    .cronograma-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+
+        .cronograma-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .cronograma-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .cronograma-scroll::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+            .cronograma-scroll::-webkit-scrollbar-thumb:hover {
+                background: #555;
+            }
+}
+
+/* Estilos para desktop */
+@media (min-width: 769px) {
+    .tabla-cronograma-desktop {
+        font-size: 13px;
+    }
+
+        .tabla-cronograma-desktop th,
+        .tabla-cronograma-desktop td {
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+}
+
+/* Estados de las filas */
+.fila-pagado {
+    background-color: #d4edda !important;
+    border-left: 3px solid #28a745;
+}
+
+.fila-vencido {
+    background-color: #f8d7da !important;
+    border-left: 3px solid #dc3545;
+}
+
+.fila-pendiente {
+    background-color: #fff3cd !important;
+    border-left: 3px solid #ffc107;
+}
+
+.fila-seleccionada {
+    background-color: #cce5ff !important;
+    border-left: 3px solid #007bff !important;
+    box-shadow: inset 0 0 5px rgba(0,123,255,0.3);
+}
+
+/* Animación para selección */
+.tabla-cronograma-mobile tbody tr {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+    .tabla-cronograma-mobile tbody tr:hover {
+        background-color: #f8f9fa !important;
+    }
+
+
+@media (max-width: 768px) {
+    .tabla-movimientos-mobile {
+        font-size: 11px !important;
+    }
+
+        .tabla-movimientos-mobile th,
+        .tabla-movimientos-mobile td {
+            padding: 4px 6px !important;
+            font-size: 11px !important;
+            line-height: 1.2 !important;
+        }
+
+        .tabla-movimientos-mobile th {
+            font-size: 10px !important;
+            font-weight: 600 !important;
+        }
+
+        .tabla-movimientos-mobile .btn {
+            font-size: 9px !important;
+            padding: 2px 6px !important;
+        }
+
+        .tabla-movimientos-mobile .badge {
+            font-size: 8px !important;
+            padding: 2px 4px !important;
+        }
+
+    @media (max-width: 480px) {
+        .col-hide-xs {
+            display: none !important;
+        }
+    }
+}
+
+.movimientos-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+
+@media (max-width: 768px) {
+    .tabla-movimientos-mobile th,
+    .tabla-movimientos-mobile td {
+        padding: 4px 6px !important;
+        font-size: 11px !important;
+    }
+
+    .tabla-movimientos-mobile .btn {
+        font-size: 9px !important;
+        padding: 2px 6px !important;
+    }
+}

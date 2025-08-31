@@ -507,6 +507,9 @@ public partial class pagosContext : DbContext
                 .HasColumnName("APROBADO");
             entity.Property(e => e.AprobadoPor).HasColumnName("APROBADO_POR");
             entity.Property(e => e.CreadaPor).HasColumnName("CREADA_POR");
+            entity.Property(e => e.CuentaBolson)
+                .HasPrecision(10, 2)
+                .HasColumnName("CUENTA_BOLSON");
             entity.Property(e => e.Cuota)
                 .HasPrecision(8, 2)
                 .HasColumnName("CUOTA");

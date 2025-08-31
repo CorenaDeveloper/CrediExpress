@@ -426,6 +426,7 @@ wwwroot\css\CorteRuta.css
 wwwroot\css\Liquidacion.css
 wwwroot\css\loadings.css
 wwwroot\css\login.css
+wwwroot\css\Movimientos.css
 wwwroot\css\site.css
 wwwroot\favicon.ico
 wwwroot\forms\forms.html
@@ -440,6 +441,7 @@ wwwroot\js\loadingSpinner.js
 wwwroot\js\Movimientos.js
 wwwroot\js\NuevoPrestamo.js
 wwwroot\js\Prestamo.js
+wwwroot\js\PrestamoXCliente.js
 wwwroot\js\site.js
 wwwroot\js\SolicitudesPrestamo.js
 wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css
@@ -588,6 +590,7 @@ C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\css\C
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\css\Liquidacion.css
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\css\loadings.css
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\css\login.css
+C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\css\Movimientos.css
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\css\site.css
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\favicon.ico
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\forms\forms.html
@@ -602,6 +605,7 @@ C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\js\lo
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\js\Movimientos.js
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\js\NuevoPrestamo.js
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\js\Prestamo.js
+C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\js\PrestamoXCliente.js
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\js\site.js
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\js\SolicitudesPrestamo.js
 C:\Users\programador04\Documents\GitHub\CrediExpress\Credi-Express\wwwroot\lib\bootstrap\dist\css\bootstrap-grid.css

@@ -59,6 +59,8 @@ public partial class Prestamo
 
     public int? ReenviadoPor { get; set; }
 
+    public decimal? CuentaBolson { get; set; }
+
     public virtual ICollection<CalendarioPago> CalendarioPagos { get; set; } = new List<CalendarioPago>();
 
     public virtual Cliente IdclienteNavigation { get; set; }

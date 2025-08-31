@@ -505,7 +505,7 @@ namespace Credi_Express.Controllers
         public async Task<IActionResult> GetClienteDetalle(string dui)
         {
             var a = await context.Clientes
-                .Where(c => c.Dui == dui)
+                .Where(c => c.Dui == dui && c.Activo == 1)
                 .Select(c => new ClienteConGestorVM
                 {
                     Id = c.Id,
@@ -550,6 +550,66 @@ namespace Credi_Express.Controllers
             return Ok(a);
         }
 
+        /// <summary>
+        /// Lista de clientes por nombre o apellido
+        /// </summary>
+        /// <param name="nombreApellido">Nombre o apellido (búsqueda parcial)</param>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<IActionResult> GetClienteDetalleNombre(string nombreApellido)
+        {
+            if (string.IsNullOrWhiteSpace(nombreApellido))
+            {
+                return BadRequest("El parámetro nombreApellido no puede estar vacío");
+            }
+
+            var clientes = await context.Clientes
+                .Where(c => c.Nombre.Contains(nombreApellido) && c.Activo == 1 ||
+                           c.Apellido.Contains(nombreApellido) && c.Activo == 1)
+                .Select(c => new ClienteConGestorVM
+                {
+                    Id = c.Id,
+                    Nombre = c.Nombre,
+                    Apellido = c.Apellido,
+                    IdGestor = c.Idgestor,
+                    GestorNombre = context.Gestors
+                               .Where(g => g.Id == c.Idgestor)
+                               .Select(g => g.Nombre + " " + g.Apellido)
+                               .FirstOrDefault() ?? "Gestor no asignado",
+                    Dui = c.Dui,
+                    Direccion = c.Direccion,
+                    Telefono = c.Telefono,
+                    Celular = c.Celular,
+                    FechaIngreso = c.FechaIngreso,
+                    Departamento = c.Departamento,
+                    DepartamentoNombre = context.Departamentos
+                               .Where(d => d.Id == Convert.ToInt32(c.Departamento))
+                               .Select(d => d.Nombre)
+                               .FirstOrDefault() ?? "Departamento no asignado",
+                    Activo = c.Activo,
+                    Giro = c.Giro,
+                    Referencia1 = c.Referencia1,
+                    Telefono1 = c.Telref1,
+                    Referencia2 = c.Referencia2,
+                    Telefono2 = c.Telref2,
+                    TipoPer = c.TipoPer,
+                    FechaNacimiento = c.FechaNacimiento,
+                    Sexo = c.Sexo,
+                    Nit = c.Nit,
+                    DuiDetras = c.DuiDetras,
+                    DuiFrente = c.DuiFrente,
+                    FotoNegocio1 = c.Fotonegocio1,
+                    FotoNegocio2 = c.Fotonegocio2,
+                    FotoNegocio3 = c.Fotonegocio3,
+                    FotoNegocio4 = c.Fotonegocio4,
+                    Longitud = c.Longitud,
+                    Latitud = c.Latitud,
+                    Profesion = c.Profesion
+                })
+                .ToListAsync();
+
+            return Ok(clientes);
+        }
 
         /// <summary>
         /// LISTA DE CLIENTE PARA LA TABLA
@@ -679,15 +739,26 @@ namespace Credi_Express.Controllers
         /// <param name="fecha"></param>
         /// <returns></returns>
         [HttpGet]
-        public async Task<IActionResult> GetMovimientosDiariosCompleto(DateOnly? fecha)
+        public async Task<IActionResult> GetMovimientosDiariosCompleto(DateOnly? fecha, int? creadoPor = null)
         {
             try
             {
                 var gestorId = HttpContext.Session.GetInt32("GestorId");
-                var gestor = await context.Gestors
-                    .FirstOrDefaultAsync(g => g.Id == gestorId);
-                var movimientos = await context.Pagosdetalles
-                    .Where(d => d.FechaPago.HasValue && d.FechaPago == fecha && d.Pagado == 1 && d.CreadoPor == gestor.Id)
+                var userId = HttpContext.Session.GetInt32("UsuarioId");
+
+
+                // Construir la consulta base
+                var query = context.Pagosdetalles
+                    .Where(d => d.FechaPago.HasValue && d.FechaPago == fecha && d.Pagado == 1);
+
+                // Aplicar filtro de usuario solo si NO es administrador
+                if (!User.TienePermiso("Home/Movimientos", "Admin"))
+                {
+                    query = query.Where(d => d.CreadoPor == userId);
+                }
+
+
+                var movimientos = await query
                     .Include(d => d.IdprestamoNavigation)
                         .ThenInclude(p => p.IdclienteNavigation)
                     .Select(d => new
@@ -710,10 +781,10 @@ namespace Credi_Express.Controllers
                         Capital = d.Capital ?? 0,
                         Interes = d.Interes ?? 0,
                         Mora = d.Mora ?? 0,
-                        // Detalles adicionales para el ticket
                         NumeroCuota = d.Numeropago,
                         IdPrestamo = d.Idprestamo,
-                        FechaPago = d.FechaPago
+                        FechaPago = d.FechaPago,
+                        CreadoPor = d.CreadoPor // Agregar para identificar el usuario que creó el registro
                     })
                     .OrderByDescending(d => d.Id)
                     .ToListAsync();
@@ -733,12 +804,18 @@ namespace Credi_Express.Controllers
                         egresosDia = totalEgresos,
                         efectivoDisponible = totalIngresos - totalEgresos
                     },
-                    fecha = fecha
+                    fecha = fecha,
+                    usuarioActual = userId
                 });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { success = false, message = "Error interno del servidor", error = ex.Message });
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Error interno del servidor",
+                    error = ex.Message
+                });
             }
         }
 
@@ -1321,7 +1398,7 @@ namespace Credi_Express.Controllers
                     pagado = cp.Estado == "PAGADO" || cp.Estado == "PARCIAL",
                     vencido = cp.Estado == "PENDIENTE" && cp.FechaProgramada < DateOnly.FromDateTime(DateTime.Today),
                     puedeSeleccionar = cp.Estado == "PENDIENTE" ||
-                                     (cp.Estado == "PENDIENTE" && cp.FechaProgramada <= DateOnly.FromDateTime(DateTime.Today).AddDays(30)) // Permitir hasta 30 días adelantado
+                                     (cp.Estado == "PENDIENTE" && cp.FechaProgramada <= DateOnly.FromDateTime(DateTime.Today).AddDays(5)) // Permitir hasta 30 días adelantado
                 })
                 .ToListAsync();
 
